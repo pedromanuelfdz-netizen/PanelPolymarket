@@ -4,190 +4,386 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Radio Trader</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --tg-bg: #17212b;
+      --tg-surface: #242f3d;
+      --tg-surface2: #2b5278;
+      --tg-blue: #2b9af3;
+      --tg-blue-light: #5ab3f7;
+      --tg-green: #4dca6e;
+      --tg-red: #f36d6d;
+      --tg-orange: #f0a644;
+      --tg-text: #ffffff;
+      --tg-text2: #aab8c2;
+      --tg-text3: #5a7385;
+      --tg-border: #1c2733;
+      --tg-input: #1c2a35;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { background: #0a0a0a; color: #ccc; font-family: 'Courier New', monospace; }
-    .app { max-width: 480px; margin: 0 auto; padding: 12px; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #1a1a1a; }
-    .app-title { font-size: 10px; letter-spacing: 3px; color: #444; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-    .dot.green { background: #22c55e; animation: pulse 2s infinite; }
-    .dot.amber { background: #f59e0b; animation: pulse 1s infinite; }
-    .dot.red { background: #dc2626; }
-    .status-txt { font-size: 11px; color: #555; }
-    .section-label { font-size: 9px; letter-spacing: 2px; color: #444; margin-bottom: 8px; margin-top: 12px; }
-    .divider { border: none; border-top: 1px solid #1a1a1a; margin: 10px 0; }
+    body { background: var(--tg-bg); color: var(--tg-text); font-family: var(--sans); min-height: 100vh; }
 
-    .url-box { margin-bottom: 10px; }
-    .url-box input { width: 100%; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #222; background: #111; color: #ccc; outline: none; margin-bottom: 6px; }
-    .url-box input:focus { border-color: #3b82f6; }
-    .url-box input::placeholder { color: #333; font-size: 11px; }
-    .btn-load { width: 100%; background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 12px; font-family: 'Courier New', monospace; font-size: 12px; cursor: pointer; letter-spacing: 1px; }
-    .btn-load:active { opacity: 0.8; }
+    /* Header */
+    .header {
+      background: var(--tg-surface);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--tg-border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--tg-blue), #1a6fa8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .header-info { flex: 1; }
+    .header-name { font-size: 15px; font-weight: 600; color: var(--tg-text); }
+    .header-status { font-size: 12px; color: var(--tg-green); display: flex; align-items: center; gap: 4px; }
+    .header-status.offline { color: var(--tg-text3); }
+    .online-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tg-green); animation: pulse 2s infinite; }
 
-    .event-info { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; display: none; }
-    .event-info.visible { display: block; }
-    .event-name { font-size: 13px; font-weight: bold; color: #ccc; margin-bottom: 8px; }
-    .market-list { display: flex; flex-direction: column; gap: 5px; }
-    .market-item { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+    /* Chat container */
+    .chat { padding: 12px 12px 80px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* Message bubbles */
+    .msg { display: flex; flex-direction: column; max-width: 85%; }
+    .msg.bot { align-self: flex-start; }
+    .msg.user { align-self: flex-end; }
+    .bubble {
+      padding: 10px 14px; border-radius: 18px;
+      font-size: 14px; line-height: 1.5;
+    }
+    .msg.bot .bubble {
+      background: var(--tg-surface);
+      border-bottom-left-radius: 4px;
+      color: var(--tg-text);
+    }
+    .msg.user .bubble {
+      background: var(--tg-surface2);
+      border-bottom-right-radius: 4px;
+      color: var(--tg-text);
+    }
+    .msg-time { font-size: 11px; color: var(--tg-text3); margin-top: 3px; padding: 0 4px; }
+    .msg.user .msg-time { text-align: right; }
+
+    /* Card bubble - special styled message */
+    .card-bubble {
+      background: var(--tg-surface);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      overflow: hidden;
+      max-width: 85%;
+      align-self: flex-start;
+    }
+    .card-header {
+      background: linear-gradient(135deg, #1a3a52, #0d2133);
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--tg-border);
+    }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--tg-text); }
+    .card-sub { font-size: 11px; color: var(--tg-text3); margin-top: 2px; }
+    .card-body { padding: 12px 14px; }
+
+    /* Price display */
+    .price-display {
+      display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;
+    }
+    .price-main { font-family: var(--mono); font-size: 32px; font-weight: 700; color: var(--tg-green); }
+    .price-label { font-size: 12px; color: var(--tg-text3); }
+    .price-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .price-chip {
+      background: var(--tg-input); border-radius: 8px; padding: 5px 10px;
+      font-family: var(--mono); font-size: 12px; flex: 1; text-align: center;
+    }
+    .price-chip-label { color: var(--tg-text3); font-size: 10px; margin-bottom: 2px; }
+    .price-chip-val { color: var(--tg-text); font-weight: 600; }
+
+    /* Inline buttons (like Telegram inline keyboard) */
+    .inline-kb { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .inline-row { display: flex; gap: 6px; }
+    .inline-btn {
+      flex: 1; background: var(--tg-input);
+      border: 1px solid var(--tg-border); border-radius: 10px;
+      padding: 10px 8px; text-align: center; cursor: pointer;
+      transition: all 0.15s; user-select: none;
+      font-family: var(--sans); font-size: 13px; color: var(--tg-text);
+    }
+    .inline-btn:active { transform: scale(0.96); background: #253545; }
+    .inline-btn.selected-blue { background: var(--tg-surface2); border-color: var(--tg-blue); color: var(--tg-blue-light); }
+    .inline-btn.selected-red { background: #3d1a1a; border-color: var(--tg-red); color: var(--tg-red); }
+    .inline-btn.selected-green { background: #1a3d26; border-color: var(--tg-green); color: var(--tg-green); }
+    .inline-btn.selected-orange { background: #3d2d0d; border-color: var(--tg-orange); color: var(--tg-orange); }
+    .inline-btn .btn-icon { font-size: 18px; display: block; margin-bottom: 3px; }
+    .inline-btn .btn-text { font-size: 11px; color: inherit; }
+
+    /* Market tabs */
+    .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      background: var(--tg-input); border: 1px solid var(--tg-border);
+      border-radius: 20px; padding: 5px 12px; white-space: nowrap;
+      font-size: 12px; color: var(--tg-text3); cursor: pointer; flex-shrink: 0;
+    }
+    .tab.active { background: var(--tg-blue); border-color: var(--tg-blue); color: white; }
+
+    /* Market list items */
+    .market-item {
+      background: var(--tg-input); border-radius: 10px; padding: 10px 12px;
+      margin-bottom: 6px; cursor: pointer; border: 1px solid transparent;
+      transition: all 0.15s;
+    }
     .market-item:active { opacity: 0.7; }
-    .market-item.selected { border: 1.5px solid #3b82f6; background: #0d1929; }
-    .market-q { font-size: 11px; color: #aaa; line-height: 1.3; }
-    .market-vol { font-size: 10px; color: #444; margin-top: 2px; }
+    .market-item.selected { border-color: var(--tg-blue); background: #1a2d3d; }
+    .market-q { font-size: 13px; color: var(--tg-text); line-height: 1.4; }
+    .market-vol { font-size: 11px; color: var(--tg-text3); margin-top: 3px; font-family: var(--mono); }
 
-    .price-bar { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: none; }
-    .price-bar.visible { display: block; }
-    .price-row { display: flex; justify-content: space-between; align-items: center; }
-    .price-big { font-size: 26px; font-weight: bold; color: #22c55e; }
-    .price-label { font-size: 9px; color: #444; margin-bottom: 2px; }
-    .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 3px; animation: pulse 1.5s infinite; }
-    .spread-txt { font-size: 11px; color: #666; }
+    /* Signal card */
+    .signal-card {
+      background: var(--tg-surface);
+      border-radius: 16px; border-bottom-left-radius: 4px;
+      overflow: hidden; max-width: 85%; align-self: flex-start;
+      border: 1px solid var(--tg-border);
+    }
+    .signal-card.edge-yes { border-color: var(--tg-green); }
+    .signal-card.edge-no { border-color: var(--tg-red); }
+    .signal-top {
+      padding: 12px 14px 8px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .signal-status { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+    .signal-status.yes { color: var(--tg-green); }
+    .signal-status.no { color: var(--tg-red); }
+    .signal-status.wait { color: var(--tg-text3); }
+    .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 14px 12px; }
+    .sig-box { background: var(--tg-input); border-radius: 10px; padding: 10px; text-align: center; }
+    .sig-box.profit-box { background: #112211; border: 1px solid #2d6b3a; }
+    .sig-num { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--tg-text); }
+    .sig-num.green { color: var(--tg-green); font-size: 24px; }
+    .sig-num.red { color: var(--tg-red); }
+    .sig-num.blue { color: var(--tg-blue-light); }
+    .sig-lbl { font-size: 10px; color: var(--tg-text3); margin-top: 3px; }
+    .sig-sub { font-size: 9px; color: var(--tg-text3); margin-top: 1px; opacity: 0.7; }
+    .payout-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--tg-border); }
+    .payout-cell { padding: 8px; text-align: center; border-right: 1px solid var(--tg-border); }
+    .payout-cell:last-child { border-right: none; }
+    .payout-num { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--tg-text2); }
+    .payout-lbl { font-size: 9px; color: var(--tg-text3); margin-top: 2px; }
 
-    .event-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
-    .ev-btn { background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px 6px; text-align: center; cursor: pointer; user-select: none; }
-    .ev-btn:active { transform: scale(0.95); }
-    .ev-btn.active { border: 2px solid #dc2626; background: #1a0808; }
-    .ev-icon { font-size: 18px; margin-bottom: 3px; }
-    .ev-label { font-size: 10px; color: #666; }
+    /* Input area */
+    .input-area {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--tg-surface);
+      border-top: 1px solid var(--tg-border);
+      padding: 8px 12px;
+      z-index: 10;
+    }
+    .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .input-field {
+      flex: 1; background: var(--tg-input);
+      border: 1px solid var(--tg-border); border-radius: 22px;
+      padding: 10px 16px; font-size: 14px;
+      color: var(--tg-text); font-family: var(--sans); outline: none;
+    }
+    .input-field:focus { border-color: var(--tg-blue); }
+    .input-field::placeholder { color: var(--tg-text3); }
+    .send-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--tg-blue); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0; transition: all 0.15s;
+    }
+    .send-btn:active { transform: scale(0.92); }
 
-    .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-    .team-btn { background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px 8px; text-align: center; cursor: pointer; user-select: none; }
-    .team-btn:active { transform: scale(0.97); }
-    .team-btn.home-sel { border: 2px solid #3b82f6; background: #0d1929; }
-    .team-btn.away-sel { border: 2px solid #f59e0b; background: #1a1200; }
-    .team-side { font-size: 9px; color: #444; margin-bottom: 3px; }
-    .team-name { font-size: 12px; font-weight: bold; color: #aaa; }
+    /* Amount row in input area */
+    .amount-row { display: flex; gap: 6px; align-items: center; }
+    .amount-label { font-size: 11px; color: var(--tg-text3); white-space: nowrap; }
+    .amount-field {
+      width: 80px; background: var(--tg-input);
+      border: 1px solid var(--tg-border); border-radius: 10px;
+      padding: 6px 10px; font-size: 14px; font-weight: 600;
+      color: var(--tg-green); font-family: var(--mono);
+      text-align: center; outline: none;
+    }
+    .amount-field:focus { border-color: var(--tg-green); }
+    .qa-btn {
+      background: var(--tg-input); border: 1px solid var(--tg-border);
+      border-radius: 8px; padding: 5px 8px; font-size: 11px;
+      color: var(--tg-text3); cursor: pointer; font-family: var(--mono);
+    }
+    .qa-btn:active { background: var(--tg-surface2); color: var(--tg-text); }
 
-    .minute-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .minute-row input[type=range] { flex: 1; accent-color: #3b82f6; }
-    .minute-val { font-size: 18px; font-weight: bold; color: #ccc; min-width: 40px; text-align: right; }
+    /* Fire button */
+    .fire-btn {
+      width: 100%; padding: 14px; border-radius: 12px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      border: none; font-family: var(--sans); transition: all 0.15s;
+      margin-top: 6px;
+    }
+    .fire-btn.ready { background: var(--tg-green); color: #0a1f12; }
+    .fire-btn.ready:active { transform: scale(0.98); opacity: 0.9; }
+    .fire-btn.disabled { background: var(--tg-input); color: var(--tg-text3); cursor: not-allowed; }
+    .fire-btn.fired { background: var(--tg-blue); color: white; }
 
-    .signal-card { border-radius: 8px; border: 1px solid #1e1e1e; padding: 12px; margin-bottom: 10px; background: #0d0d0d; }
-    .signal-card.has-edge { border-color: #22c55e; background: #071a0e; }
-    .signal-card.no-edge { border-color: #dc2626; background: #1a0808; }
-    .signal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .sig-item { text-align: center; }
-    .sig-val { font-size: 16px; font-weight: bold; color: #ccc; }
-    .sig-val.pos { color: #22c55e; }
-    .sig-val.neg { color: #dc2626; }
-    .sig-lbl { font-size: 9px; color: #444; margin-top: 2px; }
+    /* Typing indicator */
+    .typing { display: flex; gap: 4px; align-items: center; padding: 10px 14px; }
+    .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tg-text3); animation: typing 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-    .fire-btn { width: 100%; padding: 18px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; cursor: pointer; border: none; margin-bottom: 10px; }
-    .fire-btn.ready { background: #16a34a; color: white; }
-    .fire-btn.ready:active { background: #15803d; transform: scale(0.98); }
-    .fire-btn.disabled { background: #111; color: #333; border: 1px solid #1e1e1e; cursor: not-allowed; }
-    .fire-btn.fired { background: #1e40af; color: white; }
+    @keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.5} 30%{transform:translateY(-6px);opacity:1} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .animate-in { animation: slideIn 0.25s ease forwards; }
 
-    .log { max-height: 90px; overflow-y: auto; border-top: 1px solid #1a1a1a; padding-top: 8px; }
-    .log-line { font-size: 10px; color: #333; padding: 2px 0; display: flex; gap: 6px; }
-    .log-line.ok .msg { color: #16a34a; }
-    .log-line.warn .msg { color: #d97706; }
-    .log-line.err .msg { color: #dc2626; }
-    .log-time { min-width: 55px; }
-    .msg { color: #444; }
-
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--tg-surface2); border-radius: 2px; }
   </style>
 </head>
 <body>
-<div class="app">
-  <div class="topbar">
-    <span class="app-title">RADIO TRADER — POLYMARKET</span>
-    <span><span class="dot green" id="sdot"></span><span class="status-txt" id="stxt">listo</span></span>
-  </div>
 
-  <div class="section-label">PEGA LA URL DEL PARTIDO DE POLYMARKET</div>
-  <div class="url-box">
-    <input type="text" id="urlinput" placeholder="https://polymarket.com/sports/es2/es2-rso-rrc-2026-04-17" autocomplete="off" autocorrect="off" autocapitalize="off" />
-    <button class="btn-load" onclick="loadEvent()">CARGAR PARTIDO</button>
-  </div>
-
-  <div class="event-info" id="eventinfo">
-    <div class="event-name" id="eventname">—</div>
-    <div class="section-label" style="margin-top:0;margin-bottom:6px;">SELECCIONA EL MERCADO</div>
-    <div class="market-list" id="mlist"></div>
-  </div>
-
-  <div class="price-bar" id="pricebar">
-    <div class="price-row">
-      <div>
-        <div class="price-label"><span class="live-dot"></span>PRECIO YES</div>
-        <div class="price-big" id="pbig">—</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="price-label">SPREAD</div>
-        <div class="spread-txt" id="pspread">—</div>
-        <div class="price-label" style="margin-top:4px;">MERCADO</div>
-        <div style="font-size:10px;color:#444;max-width:130px;text-align:right;line-height:1.3;" id="pmkt">—</div>
-      </div>
+<!-- Header -->
+<div class="header">
+  <div class="header-avatar">⚡</div>
+  <div class="header-info">
+    <div class="header-name">Radio Trader Bot</div>
+    <div class="header-status" id="hstatus">
+      <div class="online-dot"></div>
+      <span id="hstatus-txt">conectado a Polymarket</span>
     </div>
   </div>
+</div>
 
-  <hr class="divider">
-  <div class="section-label">EVENTO DETECTADO</div>
-  <div class="event-grid">
-    <div class="ev-btn" id="ebtn-goal" onclick="selEvent('goal')"><div class="ev-icon">⚽</div><div class="ev-label">Gol</div></div>
-    <div class="ev-btn" id="ebtn-red_card" onclick="selEvent('red_card')"><div class="ev-icon">🟥</div><div class="ev-label">Roja</div></div>
-    <div class="ev-btn" id="ebtn-yellow_red_card" onclick="selEvent('yellow_red_card')"><div class="ev-icon">🟨🟥</div><div class="ev-label">2ª amarilla</div></div>
-    <div class="ev-btn" id="ebtn-penalty_awarded" onclick="selEvent('penalty_awarded')"><div class="ev-icon">🎯</div><div class="ev-label">Penalty</div></div>
-    <div class="ev-btn" id="ebtn-injury_stop" onclick="selEvent('injury_stop')"><div class="ev-icon">🏥</div><div class="ev-label">Lesión</div></div>
-    <div class="ev-btn" id="ebtn-var" onclick="selEvent('var')"><div class="ev-icon">📺</div><div class="ev-label">VAR</div></div>
-  </div>
+<!-- Chat -->
+<div class="chat" id="chat">
 
-  <div class="section-label">¿QUIÉN?</div>
-  <div class="team-grid">
-    <div class="team-btn" id="tbtn-home" onclick="selTeam('home')"><div class="team-side">LOCAL</div><div class="team-name" id="tname-home">—</div></div>
-    <div class="team-btn" id="tbtn-away" onclick="selTeam('away')"><div class="team-side">VISITANTE</div><div class="team-name" id="tname-away">—</div></div>
-  </div>
-
-  <div class="section-label">MINUTO</div>
-  <div class="minute-row">
-    <input type="range" min="1" max="95" value="45" id="mslider" oninput="selMinute(this.value)" />
-    <div class="minute-val" id="mval">45'</div>
-  </div>
-
-  <div class="signal-card" id="sigcard">
-    <div class="section-label" id="siglabel" style="margin-top:0;margin-bottom:8px;">ESPERANDO DATOS</div>
-    <div class="signal-grid">
-      <div class="sig-item"><div class="sig-val" id="sv-price">—</div><div class="sig-lbl">precio</div></div>
-      <div class="sig-item"><div class="sig-val" id="sv-model">—</div><div class="sig-lbl">modelo</div></div>
-      <div class="sig-item"><div class="sig-val" id="sv-edge">—</div><div class="sig-lbl">edge</div></div>
-      <div class="sig-item"><div class="sig-val" id="sv-size">—</div><div class="sig-lbl">tamaño</div></div>
+  <!-- Welcome message -->
+  <div class="msg bot animate-in">
+    <div class="bubble">
+      👋 Hola! Soy tu asistente de trading en Polymarket.<br><br>
+      Pega la URL del partido que quieres tradear y te cargo todos los mercados disponibles.
     </div>
+    <div class="msg-time" id="welcome-time"></div>
   </div>
 
-  <button class="fire-btn disabled" id="fbtn" onclick="fireOrder()">DISPARAR ORDEN</button>
-  <div class="log" id="logbox"></div>
+</div>
+
+<!-- Input area -->
+<div class="input-area">
+  <div class="input-row">
+    <input type="text" class="input-field" id="urlinput"
+      placeholder="polymarket.com/sports/es2/es2-..." autocomplete="off" autocorrect="off" autocapitalize="off" />
+    <button class="send-btn" onclick="loadEvent()">➤</button>
+  </div>
+  <div class="amount-row">
+    <span class="amount-label">Apuesta $</span>
+    <input type="number" class="amount-field" id="amountinput" value="50" min="1" oninput="compute()" />
+    <div class="qa-btn" onclick="setAmount(10)">10</div>
+    <div class="qa-btn" onclick="setAmount(25)">25</div>
+    <div class="qa-btn" onclick="setAmount(50)">50</div>
+    <div class="qa-btn" onclick="setAmount(100)">100</div>
+    <div class="qa-btn" onclick="setAmount(200)">200</div>
+  </div>
 </div>
 
 <script>
 const BOT = "https://worker-production-b5c8.up.railway.app";
-const S = { event:null, team:null, minute:45, price:null, model:null, edge:null, size:0, fired:false, token:null, home:'', away:'', bookTimer:null };
-
-const DELTAS = {
-  goal:            {'0-45':0.18,'45-70':0.15,'70-85':0.12,'85-95':0.08},
-  red_card:        {'0-45':-0.12,'45-70':-0.10,'70-85':-0.07,'85-95':-0.04},
-  yellow_red_card: {'0-45':-0.10,'45-70':-0.09,'70-85':-0.06,'85-95':-0.03},
-  penalty_awarded: {'0-45':0.06,'45-70':0.06,'70-85':0.06,'85-95':0.06},
-  injury_stop:     {'0-45':-0.04,'45-70':-0.04,'70-85':-0.03,'85-95':-0.02},
-  var:             {'0-45':0,'45-70':0,'70-85':0,'85-95':0},
+const S = {
+  event: null, team: null,
+  price: null, bid: null, spread: null,
+  model: null, edge: null,
+  fired: false, token: null,
+  home: '', away: '', bookTimer: null
 };
 
-function bucket(m) { if(m<45)return'0-45'; if(m<70)return'45-70'; if(m<85)return'70-85'; return'85-95'; }
+const DELTAS = {
+  goal:            {'mid':0.15},
+  red_card:        {'mid':-0.09},
+  yellow_red_card: {'mid':-0.07},
+  penalty_awarded: {'mid':0.06},
+  injury_stop:     {'mid':-0.03},
+  var:             {'mid':0},
+};
 
-function addLog(msg, type) {
-  const box = document.getElementById('logbox');
-  const t = new Date().toTimeString().slice(0,8);
-  const el = document.createElement('div');
-  el.className = 'log-line '+(type||'');
-  el.innerHTML = `<span class="log-time">${t}</span><span class="msg">${msg}</span>`;
-  box.appendChild(el);
-  box.scrollTop = box.scrollHeight;
+const EVENT_LABELS = {
+  goal: { icon: '⚽', label: 'Gol', color: 'selected-green' },
+  red_card: { icon: '🟥', label: 'Roja', color: 'selected-red' },
+  yellow_red_card: { icon: '🟨🟥', label: '2ª amarilla', color: 'selected-red' },
+  penalty_awarded: { icon: '🎯', label: 'Penalty', color: 'selected-orange' },
+  injury_stop: { icon: '🏥', label: 'Lesión', color: 'selected-orange' },
+  var: { icon: '📺', label: 'VAR', color: 'selected-blue' },
+};
+
+let allMarkets = [];
+let activeTab = '';
+let signalMsgId = null;
+let fireBtnEl = null;
+
+function now() {
+  return new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
 }
 
-function setStatus(txt, cls) {
-  document.getElementById('stxt').textContent = txt;
-  document.getElementById('sdot').className = 'dot '+cls;
+document.getElementById('welcome-time').textContent = now();
+
+function addMsg(html, type='bot', id=null) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${type} animate-in`;
+  if (id) wrap.id = id;
+  wrap.innerHTML = `<div class="bubble">${html}</div><div class="msg-time${type==='user'?' style="text-align:right"':''}">${now()}</div>`;
+  chat.appendChild(wrap);
+  setTimeout(() => wrap.scrollIntoView({behavior:'smooth',block:'end'}), 50);
+  return wrap;
+}
+
+function addCard(headerHtml, bodyHtml, id=null) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'card-bubble animate-in';
+  if (id) wrap.id = id;
+  wrap.innerHTML = `<div class="card-header">${headerHtml}</div><div class="card-body">${bodyHtml}</div>`;
+  chat.appendChild(wrap);
+  setTimeout(() => wrap.scrollIntoView({behavior:'smooth',block:'end'}), 50);
+  return wrap;
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const el = document.createElement('div');
+  el.className = 'msg bot animate-in';
+  el.id = 'typing-indicator';
+  el.innerHTML = `<div class="bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  chat.appendChild(el);
+  el.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function setStatus(txt, online=true) {
+  document.getElementById('hstatus-txt').textContent = txt;
+  document.getElementById('hstatus').className = 'header-status' + (online ? '' : ' offline');
+}
+
+function getAmount() { return parseFloat(document.getElementById('amountinput').value) || 50; }
+function setAmount(v) { document.getElementById('amountinput').value = v; compute(); }
+
+function marketType(q) {
+  q = (q||'').toLowerCase();
+  if (q.includes('o/u') || q.includes('over') || q.includes('under') || q.includes('total')) return 'Totales';
+  if (q.includes('spread') || q.includes('-1.5') || q.includes('-2.5') || q.includes('+1.5') || q.includes('+2.5')) return 'Spread';
+  if (q.includes('both teams') || q.includes('btts')) return 'BTTS';
+  if (q.includes('exact score')) return 'Exacto';
+  if (q.includes('draw') || q.includes('empate')) return 'Moneyline';
+  if (q.includes('win')) return 'Moneyline';
+  return 'Otros';
 }
 
 function extractSlug(url) {
@@ -199,57 +395,191 @@ async function loadEvent() {
   const url = document.getElementById('urlinput').value.trim();
   if (!url) return;
   const slug = extractSlug(url);
-  if (!slug) { addLog('URL no válida', 'err'); return; }
-  setStatus('cargando...', 'amber');
-  addLog('Cargando: ' + slug, '');
+  if (!slug) return;
+
+  // User message
+  addMsg(url, 'user');
+  document.getElementById('urlinput').value = '';
+
+  showTyping();
+  setStatus('cargando partido...', true);
+
   try {
     const res = await fetch(`${BOT}/event?slug=${encodeURIComponent(slug)}`);
     const data = await res.json();
-    if (data.error) { addLog('Error: ' + data.error, 'err'); setStatus('error', 'red'); return; }
-    document.getElementById('eventname').textContent = data.event || slug;
-    document.getElementById('eventinfo').classList.add('visible');
-    const parts = (data.event || '').split(/\s+vs\.?\s+/i);
+    removeTyping();
+
+    if (data.error) {
+      addMsg(`❌ No encontré el partido: <b>${data.error}</b>`, 'bot');
+      setStatus('error', false);
+      return;
+    }
+
+    allMarkets = data.markets || [];
+    const eventName = data.event || slug;
+
+    // Extract teams
+    const parts = eventName.split(/\s+vs\.?\s+/i);
     if (parts.length >= 2) {
-      S.home = parts[0].trim().split(' ').slice(-1)[0];
-      S.away = parts[1].trim().split(' ')[0];
+      S.home = parts[0].trim().split(' ').slice(-2).join(' ');
+      S.away = parts[1].trim().split(' ').slice(0,2).join(' ');
     }
-    document.getElementById('tname-home').textContent = S.home || 'Local';
-    document.getElementById('tname-away').textContent = S.away || 'Visitante';
-    const mlist = document.getElementById('mlist');
-    mlist.innerHTML = '';
-    (data.markets || []).forEach(m => {
-      const el = document.createElement('div');
-      el.className = 'market-item';
-      const vol = m.volume ? '$'+parseFloat(m.volume).toLocaleString('en',{maximumFractionDigits:0}) : '';
-      el.innerHTML = `<div class="market-q">${m.question}</div>${vol?'<div class="market-vol">Vol: '+vol+'</div>':''}`;
-      el.onclick = () => selectMarket(m, el);
-      mlist.appendChild(el);
-    });
-    setStatus('conectado', 'green');
-    addLog(`${data.markets.length} mercados cargados`, 'ok');
-    const byVol = [...(data.markets||[])].sort((a,b) => parseFloat(b.volume||0)-parseFloat(a.volume||0));
-    if (byVol.length) {
-      const idx = data.markets.indexOf(byVol[0]);
-      const first = mlist.children[idx];
-      if (first) selectMarket(byVol[0], first);
-    }
+
+    // Group by type
+    const types = [...new Set(allMarkets.map(m => marketType(m.question)))];
+    activeTab = types[0] || 'Moneyline';
+
+    // Build tabs HTML
+    const tabsHtml = `<div class="tabs" id="tabs-el">${types.map(t =>
+      `<div class="tab${t===activeTab?' active':''}" onclick="switchTab('${t}')">${t}</div>`
+    ).join('')}</div><div id="mlist-container"></div>`;
+
+    const headerHtml = `
+      <div class="card-title">🏟 ${eventName}</div>
+      <div class="card-sub">${allMarkets.length} mercados disponibles</div>`;
+
+    const cardEl = addCard(headerHtml, tabsHtml);
+    renderMarkets(cardEl);
+
+    setStatus('conectado · actualización cada 1s', true);
+
   } catch(e) {
-    addLog('Error: ' + e.message, 'err');
-    setStatus('error', 'red');
+    removeTyping();
+    addMsg(`❌ Error de conexión: ${e.message}`, 'bot');
+    setStatus('sin conexión', false);
   }
 }
 
-function selectMarket(m, el) {
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.textContent === tab);
+  });
+  renderMarkets();
+}
+
+function renderMarkets(cardEl) {
+  const container = document.getElementById('mlist-container');
+  if (!container) return;
+  const filtered = allMarkets.filter(m => marketType(m.question) === activeTab);
+  container.innerHTML = filtered.map((m, i) => {
+    const vol = m.volume ? '<span style="color:var(--tg-blue-light)">$'+parseFloat(m.volume).toLocaleString('en',{maximumFractionDigits:0})+'</span>' : '';
+    return `<div class="market-item" id="mitem-${i}" onclick="selectMarket(${i}, this)">
+      <div class="market-q">${m.question}</div>
+      ${vol ? `<div class="market-vol">Vol: ${vol}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Auto-select highest volume
+  const byVol = [...filtered].sort((a,b) => parseFloat(b.volume||0)-parseFloat(a.volume||0));
+  if (byVol.length) {
+    const idx = filtered.indexOf(byVol[0]);
+    const el = document.getElementById(`mitem-${idx}`);
+    if (el) selectMarket(idx, el);
+  }
+}
+
+function selectMarket(idx, el) {
   document.querySelectorAll('.market-item').forEach(x => x.classList.remove('selected'));
-  el.classList.add('selected');
+  if (el) el.classList.add('selected');
+
+  const filtered = allMarkets.filter(m => marketType(m.question) === activeTab);
+  const m = filtered[idx];
+  if (!m) return;
+
   const tokens = Array.isArray(m.token_ids) ? m.token_ids : [];
   S.token = tokens[0] || null;
-  document.getElementById('pmkt').textContent = (m.question||'').slice(0,45);
-  document.getElementById('pricebar').classList.add('visible');
+
   if (S.bookTimer) clearInterval(S.bookTimer);
   fetchBook();
-  S.bookTimer = setInterval(fetchBook, 3000);
-  addLog('Mercado: ' + (m.question||'').slice(0,40), 'ok');
+  S.bookTimer = setInterval(fetchBook, 1000);
+
+  // Show event selection message if not shown
+  if (!document.getElementById('event-selector')) {
+    showEventSelector(m.question);
+  }
+}
+
+function showEventSelector(mktName) {
+  const chat = document.getElementById('chat');
+
+  // Price card
+  const priceCardEl = document.createElement('div');
+  priceCardEl.className = 'card-bubble animate-in';
+  priceCardEl.id = 'price-card';
+  priceCardEl.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">📊 Precio en vivo</div>
+      <div class="card-sub" id="price-mkt-name" style="font-size:10px;opacity:0.7">${mktName.slice(0,50)}</div>
+    </div>
+    <div class="card-body">
+      <div class="price-display">
+        <div class="price-main" id="price-yes">—</div>
+        <div class="price-label">YES</div>
+      </div>
+      <div class="price-row">
+        <div class="price-chip"><div class="price-chip-label">BID</div><div class="price-chip-val" id="price-bid">—</div></div>
+        <div class="price-chip"><div class="price-chip-label">ASK</div><div class="price-chip-val" id="price-ask">—</div></div>
+        <div class="price-chip"><div class="price-chip-label">SPREAD</div><div class="price-chip-val" id="price-spread">—</div></div>
+      </div>
+    </div>`;
+  chat.appendChild(priceCardEl);
+
+  // Event selector
+  const evEl = document.createElement('div');
+  evEl.className = 'card-bubble animate-in';
+  evEl.id = 'event-selector';
+  evEl.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">⚡ ¿Qué ocurrió?</div>
+      <div class="card-sub">Detecta el evento en tiempo real</div>
+    </div>
+    <div class="card-body">
+      <div class="inline-kb">
+        <div class="inline-row">
+          <div class="inline-btn" id="ebtn-goal" onclick="selEvent('goal')"><span class="btn-icon">⚽</span><span class="btn-text">Gol</span></div>
+          <div class="inline-btn" id="ebtn-red_card" onclick="selEvent('red_card')"><span class="btn-icon">🟥</span><span class="btn-text">Tarjeta roja</span></div>
+          <div class="inline-btn" id="ebtn-yellow_red_card" onclick="selEvent('yellow_red_card')"><span class="btn-icon">🟨🟥</span><span class="btn-text">2ª amarilla</span></div>
+        </div>
+        <div class="inline-row">
+          <div class="inline-btn" id="ebtn-penalty_awarded" onclick="selEvent('penalty_awarded')"><span class="btn-icon">🎯</span><span class="btn-text">Penalty</span></div>
+          <div class="inline-btn" id="ebtn-injury_stop" onclick="selEvent('injury_stop')"><span class="btn-icon">🏥</span><span class="btn-text">Lesión clave</span></div>
+          <div class="inline-btn" id="ebtn-var" onclick="selEvent('var')"><span class="btn-icon">📺</span><span class="btn-text">VAR</span></div>
+        </div>
+      </div>
+    </div>`;
+  chat.appendChild(evEl);
+
+  // Team selector
+  const teamEl = document.createElement('div');
+  teamEl.className = 'card-bubble animate-in';
+  teamEl.id = 'team-selector';
+  teamEl.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">🏃 ¿Qué equipo?</div>
+    </div>
+    <div class="card-body">
+      <div class="inline-row">
+        <div class="inline-btn" id="tbtn-home" onclick="selTeam('home')">
+          <span class="btn-icon">🏠</span>
+          <span class="btn-text" id="tname-home">${S.home || 'Local'}</span>
+        </div>
+        <div class="inline-btn" id="tbtn-away" onclick="selTeam('away')">
+          <span class="btn-icon">✈️</span>
+          <span class="btn-text" id="tname-away">${S.away || 'Visitante'}</span>
+        </div>
+      </div>
+    </div>`;
+  chat.appendChild(teamEl);
+
+  // Signal card placeholder
+  const sigEl = document.createElement('div');
+  sigEl.className = 'signal-card animate-in';
+  sigEl.id = 'signal-card';
+  sigEl.innerHTML = buildSignalHTML();
+  chat.appendChild(sigEl);
+
+  setTimeout(() => sigEl.scrollIntoView({behavior:'smooth',block:'end'}), 100);
 }
 
 async function fetchBook() {
@@ -258,82 +588,140 @@ async function fetchBook() {
     const res = await fetch(`${BOT}/orderbook?token_id=${S.token}`);
     const data = await res.json();
     S.price = data.best_ask;
-    document.getElementById('pbig').textContent = S.price ? (S.price*100).toFixed(1)+'¢' : '—';
-    document.getElementById('pspread').textContent = data.spread ? (data.spread*100).toFixed(1)+'¢' : '—';
+    S.bid = data.best_bid;
+    S.spread = data.spread;
+
+    const pYes = document.getElementById('price-yes');
+    const pBid = document.getElementById('price-bid');
+    const pAsk = document.getElementById('price-ask');
+    const pSpread = document.getElementById('price-spread');
+
+    if (pYes) pYes.textContent = S.price ? (S.price*100).toFixed(1)+'¢' : '—';
+    if (pBid) pBid.textContent = S.bid ? (S.bid*100).toFixed(1)+'¢' : '—';
+    if (pAsk) pAsk.textContent = S.price ? (S.price*100).toFixed(1)+'¢' : '—';
+    if (pSpread) pSpread.textContent = S.spread ? (S.spread*100).toFixed(1)+'¢' : '—';
+
     if (S.event && S.team) compute();
   } catch(e) {}
 }
 
 function selEvent(ev) {
   S.event = ev; S.fired = false;
-  document.querySelectorAll('.ev-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('ebtn-'+ev).classList.add('active');
-  addLog(ev.replace(/_/g,' ') + ' min ' + S.minute + "'", 'warn');
+  document.querySelectorAll('[id^="ebtn-"]').forEach(b => {
+    const key = b.id.replace('ebtn-','');
+    b.className = 'inline-btn' + (key === ev ? ' ' + (EVENT_LABELS[ev]?.color || '') : '');
+  });
   compute();
 }
 
 function selTeam(t) {
   S.team = t;
-  document.getElementById('tbtn-home').className = 'team-btn'+(t==='home'?' home-sel':'');
-  document.getElementById('tbtn-away').className = 'team-btn'+(t==='away'?' away-sel':'');
+  const hb = document.getElementById('tbtn-home');
+  const ab = document.getElementById('tbtn-away');
+  if (hb) hb.className = 'inline-btn' + (t==='home' ? ' selected-blue' : '');
+  if (ab) ab.className = 'inline-btn' + (t==='away' ? ' selected-orange' : '');
   compute();
 }
 
-function selMinute(v) {
-  S.minute = parseInt(v);
-  document.getElementById('mval').textContent = v+"'";
-  if (S.event && S.team) compute();
-}
-
 function compute() {
-  if (!S.price || !S.event || !S.team) return;
-  const b = bucket(S.minute);
-  let delta = (DELTAS[S.event]||{})[b]||0;
+  if (!S.price || !S.event || !S.team) { updateSignalCard(); return; }
+  let delta = (DELTAS[S.event]||{})['mid']||0;
   if (S.team === 'away') delta = -delta;
   S.model = Math.max(0.02, Math.min(0.98, S.price + delta));
   S.edge = S.model - S.price;
-  if (S.edge > 0.03) {
-    const odds = (1/S.price)-1;
-    const kelly = ((S.model*odds-(1-S.model))/odds)*0.1;
-    S.size = Math.min(50, Math.max(0, +(500*kelly).toFixed(2)));
-  } else { S.size = 0; }
-  renderSignal();
+  updateSignalCard();
 }
 
-function renderSignal() {
-  const hasEdge = S.edge !== null && S.edge > 0.03 && S.size > 1;
-  const card = document.getElementById('sigcard');
-  card.className = 'signal-card'+(hasEdge?' has-edge':S.edge!==null?' no-edge':'');
-  document.getElementById('siglabel').textContent = hasEdge ? 'SEÑAL DETECTADA ⚡' : S.edge!==null ? 'EDGE INSUFICIENTE' : 'ESPERANDO DATOS';
-  document.getElementById('sv-price').textContent = S.price!==null ? (S.price*100).toFixed(1)+'¢' : '—';
-  document.getElementById('sv-model').textContent = S.model!==null ? (S.model*100).toFixed(1)+'¢' : '—';
-  const edgeEl = document.getElementById('sv-edge');
-  if (S.edge!==null) { edgeEl.textContent=(S.edge>0?'+':'')+(S.edge*100).toFixed(1)+'¢'; edgeEl.className='sig-val '+(S.edge>0?'pos':'neg'); }
-  else { edgeEl.textContent='—'; edgeEl.className='sig-val'; }
-  document.getElementById('sv-size').textContent = S.size ? '$'+S.size.toFixed(0) : '—';
-  const btn = document.getElementById('fbtn');
-  if (hasEdge && !S.fired) { btn.className='fire-btn ready'; btn.textContent='⚡ DISPARAR YES @ '+(S.price*100).toFixed(1)+'¢'; }
-  else if (S.fired) { btn.className='fire-btn fired'; btn.textContent='✓ ORDEN ENVIADA'; }
-  else { btn.className='fire-btn disabled'; btn.textContent='DISPARAR ORDEN'; }
+function buildSignalHTML() {
+  const amount = getAmount();
+  const hasEdge = S.edge !== null && S.edge > 0.02 && S.price !== null;
+  const statusText = hasEdge ? '⚡ SEÑAL DETECTADA' : (S.event && S.team && S.price) ? '— SIN EDGE —' : '⏳ ESPERANDO EVENTO';
+  const statusClass = hasEdge ? 'yes' : (S.event && S.team) ? 'no' : 'wait';
+  const cardClass = hasEdge ? 'edge-yes' : (S.event && S.team && S.price) ? 'edge-no' : '';
+
+  let profitHtml = '—', profitSub = '';
+  let retHtml = '—', edgeHtml = '—', edgeSub = '', priceHtml = '—', modelHtml = '—';
+
+  if (S.price !== null && amount > 0) {
+    const shares = amount / S.price;
+    const profit = shares - amount;
+    profitHtml = `+$${profit.toFixed(2)}`;
+    profitSub = `${shares.toFixed(1)} shares × $1`;
+    retHtml = `$${shares.toFixed(2)}`;
+  }
+  if (S.edge !== null) {
+    edgeHtml = (S.edge>0?'+':'') + (S.edge*100).toFixed(1) + '¢';
+    edgeSub = S.edge > 0 ? 'mercado infravalorado' : 'sobrevalorado';
+  }
+  if (S.price !== null) priceHtml = (S.price*100).toFixed(1)+'¢';
+  if (S.model !== null) modelHtml = (S.model*100).toFixed(1)+'¢';
+
+  const btnClass = hasEdge && !S.fired ? 'ready' : S.fired ? 'fired' : 'disabled';
+  const btnText = hasEdge && !S.fired
+    ? `⚡ APOSTAR $${amount} → GANAR +$${S.price ? ((amount/S.price)-amount).toFixed(2) : '?'}`
+    : S.fired ? '✓ ORDEN ENVIADA' : 'SELECCIONA EVENTO Y EQUIPO';
+
+  return `
+    <div class="signal-top" onclick="">
+      <span class="signal-status ${statusClass}">${statusText}</span>
+      <span style="font-size:11px;color:var(--tg-text3)">${now()}</span>
+    </div>
+    <div class="signal-grid">
+      <div class="sig-box">
+        <div class="sig-num ${S.edge!==null?(S.edge>0?'green':'red'):''}">${edgeHtml}</div>
+        <div class="sig-lbl">edge detectado</div>
+        <div class="sig-sub">${edgeSub}</div>
+      </div>
+      <div class="sig-box profit-box">
+        <div class="sig-num green">${profitHtml}</div>
+        <div class="sig-lbl">ganancia potencial</div>
+        <div class="sig-sub">${profitSub}</div>
+      </div>
+    </div>
+    <div class="payout-strip">
+      <div class="payout-cell"><div class="payout-num">${priceHtml}</div><div class="payout-lbl">precio YES</div></div>
+      <div class="payout-cell"><div class="payout-num">${modelHtml}</div><div class="payout-lbl">prob modelo</div></div>
+      <div class="payout-cell"><div class="payout-num">${retHtml}</div><div class="payout-lbl">retorno total</div></div>
+    </div>
+    <div style="padding:10px 12px;">
+      <button class="fire-btn ${btnClass}" onclick="fireOrder()">${btnText}</button>
+    </div>`;
+}
+
+function updateSignalCard() {
+  const card = document.getElementById('signal-card');
+  if (!card) return;
+  const hasEdge = S.edge !== null && S.edge > 0.02 && S.price !== null;
+  card.className = `signal-card animate-in ${hasEdge ? 'edge-yes' : (S.event&&S.team&&S.price?'edge-no':'')}`;
+  card.innerHTML = buildSignalHTML();
 }
 
 function fireOrder() {
-  if (S.fired || !S.edge || S.edge<=0.03 || S.size<=1) return;
+  if (S.fired || !S.edge || S.edge <= 0.02 || !S.price) return;
+  const amount = getAmount();
+  const shares = (amount / S.price).toFixed(1);
+  const profit = ((amount / S.price) - amount).toFixed(2);
   S.fired = true;
-  addLog('ORDEN | YES @ '+(S.price*100).toFixed(1)+'¢ | model '+(S.model*100).toFixed(1)+'¢ | edge +'+(S.edge*100).toFixed(1)+'¢ | $'+S.size.toFixed(0), 'ok');
-  addLog('DRY RUN — conecta wallet para órdenes reales', 'warn');
-  renderSignal();
+  updateSignalCard();
+
+  addMsg(`
+    ✅ <b>Orden registrada</b><br>
+    💵 $${amount} → ${shares} shares YES @ ${(S.price*100).toFixed(1)}¢<br>
+    📈 Ganancia potencial: <b>+$${profit}</b><br>
+    <span style="color:var(--tg-text3);font-size:12px">DRY RUN — conecta wallet Polygon para órdenes reales</span>
+  `, 'bot');
+
   setTimeout(() => {
-    S.event=null; S.team=null; S.fired=false; S.edge=null; S.model=null; S.size=0;
-    document.querySelectorAll('.ev-btn').forEach(b=>b.classList.remove('active'));
-    document.getElementById('tbtn-home').className='team-btn';
-    document.getElementById('tbtn-away').className='team-btn';
-    renderSignal();
+    S.event=null; S.team=null; S.fired=false; S.edge=null; S.model=null;
+    document.querySelectorAll('[id^="ebtn-"]').forEach(b => b.className='inline-btn');
+    const hb=document.getElementById('tbtn-home'); if(hb) hb.className='inline-btn';
+    const ab=document.getElementById('tbtn-away'); if(ab) ab.className='inline-btn';
+    updateSignalCard();
   }, 5000);
 }
 
 document.getElementById('urlinput').addEventListener('keydown', e => { if(e.key==='Enter') loadEvent(); });
-addLog('Pega la URL del partido de Polymarket para empezar', '');
+document.getElementById('amountinput').addEventListener('input', () => { compute(); });
 </script>
 </body>
 </html>
