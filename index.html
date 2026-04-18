@@ -589,7 +589,7 @@ function onAmt(){
 function setAmt(v){const f=document.getElementById('betamount');if(f){f.value=v;onAmt()}}
 function pickOutcome(idx){selOutcomeIdx=idx;renderBetCard()}
 
-function fireOrder(){
+async function fireOrder(){
   if(selOutcomeIdx===null)return;
   const ask=getAsk(selOutcomeIdx);if(!ask)return;
   const amount=parseFloat(document.getElementById('betamount')?.value||'50')||50;
@@ -597,9 +597,39 @@ function fireOrder(){
   const profit=(amount/ask-amount).toFixed(2);
   const label=selOutcomes[selOutcomeIdx];
   const col=selOutcomeIdx===0?'🟢':selOutcomeIdx===1?'🔴':'🟡';
+
   const btn=document.querySelector('#bet-card .fire-btn');
-  if(btn){btn.className='fire-btn fired';btn.textContent='✓ ORDEN ENVIADA'}
-  botMsg(`✅ <b>Orden registrada</b><br>${col} <b>${label}</b> @ ${(ask*100).toFixed(1)}¢<br>💵 $${amount} → ${shares} shares<br>📈 Ganancia potencial: <b>+$${profit}</b><br><br><small style="color:var(--text3)">🔒 DRY RUN — conecta wallet Polygon para órdenes reales</small>`);
+  if(btn){btn.className='fire-btn fired';btn.textContent='⏳ Enviando orden...';btn.disabled=true;}
+
+  try{
+    const res=await fetch(`${BOT}/order`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        token_id: selToken,
+        outcome_index: selOutcomeIdx,
+        amount_usdc: amount,
+      })
+    });
+    const data=await res.json();
+
+    if(data.status==='ok'){
+      if(btn){btn.textContent='✓ ORDEN EJECUTADA'}
+      botMsg(`✅ <b>Orden ejecutada en Polymarket</b><br>${col} <b>${label}</b> @ ${(ask*100).toFixed(1)}¢<br>💵 $${amount} → ${shares} shares<br>📈 Ganancia potencial: <b>+$${profit}</b><br><small style="color:var(--text3)">${JSON.stringify(data.result||{}).slice(0,100)}</small>`);
+    } else if(data.status==='dry_run'){
+      if(btn){btn.textContent='🔒 DRY RUN activo'}
+      botMsg(`🔒 <b>DRY RUN</b> — orden no ejecutada.<br>Cambia DRY_RUN=False en el bot para operar real.`);
+    } else {
+      if(btn){btn.className='fire-btn r0';btn.textContent='❌ Error — reintentar';btn.disabled=false;}
+      botMsg(`❌ <b>Error ejecutando orden</b><br><small style="color:var(--text3)">${data.error||JSON.stringify(data)}</small>`);
+      return;
+    }
+  }catch(e){
+    if(btn){btn.className='fire-btn r0';btn.textContent='❌ Sin conexión — reintentar';btn.disabled=false;}
+    botMsg(`❌ <b>Error de conexión</b>: ${e.message}`);
+    return;
+  }
+
   setTimeout(()=>{selOutcomeIdx=null;renderBetCard()},6000);
 }
 
