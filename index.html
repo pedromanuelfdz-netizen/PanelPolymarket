@@ -1,247 +1,512 @@
-"""
-main.py — Polymarket Football Latency Bot + API endpoint
-"""
-import asyncio
-import logging
-import sys
-import json
-from datetime import datetime
-from pathlib import Path
-from aiohttp import web
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Radio Trader</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #17212b;
+      --surface: #242f3d;
+      --surface2: #1c2a35;
+      --blue: #2b9af3;
+      --blue2: #2b5278;
+      --green: #4dca6e;
+      --red: #f36d6d;
+      --orange: #f0a644;
+      --text: #ffffff;
+      --text2: #aab8c2;
+      --text3: #5a7385;
+      --border: #1c2733;
+      --input: #1c2a35;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
 
-Path("logs").mkdir(exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(name)-14s | %(levelname)s | %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(f"logs/bot_{datetime.now().strftime('%Y%m%d')}.log"),
-    ]
-)
-log = logging.getLogger("main")
+    .header {
+      background: var(--surface); padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), #1a6fa8);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .hname { font-size: 15px; font-weight: 600; }
+    .hstatus { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+    .hdot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
 
-from modules.polymarket import PolymarketClient
-import config.settings as cfg
+    .chat { padding: 12px 12px 110px; display: flex; flex-direction: column; gap: 8px; }
 
-poly = PolymarketClient()
-markets_cache = []
+    .msg { display: flex; flex-direction: column; }
+    .msg.bot { align-self: flex-start; max-width: 88%; }
+    .msg.user { align-self: flex-end; max-width: 88%; }
+    .bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; }
+    .msg.bot .bubble { background: var(--surface); border-bottom-left-radius: 4px; }
+    .msg.user .bubble { background: var(--blue2); border-bottom-right-radius: 4px; }
+    .mtime { font-size: 11px; color: var(--text3); margin-top: 3px; padding: 0 4px; }
+    .msg.user .mtime { text-align: right; }
 
-CORS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
+    /* Cards */
+    .card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; max-width: 95%; width: 100%; border: 1px solid var(--border); }
+    .card-head { background: linear-gradient(135deg, #1a3a52, #0d2133); padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .card-title { font-size: 14px; font-weight: 600; }
+    .card-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .card-body { padding: 12px 14px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { background: var(--input); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; white-space: nowrap; font-size: 12px; color: var(--text3); cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+    .tab.active { background: var(--blue); border-color: var(--blue); color: white; font-weight: 600; }
+
+    /* Market items */
+    .mitem { background: var(--input); border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+    .mitem:active { opacity: 0.75; }
+    .mitem.sel { border-color: var(--blue); background: #1a2d3d; }
+    .mitem-q { font-size: 13px; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+    .mitem-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .mitem-vol { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+    .price-chip { background: var(--surface); border-radius: 8px; padding: 4px 8px; font-family: var(--mono); font-size: 12px; font-weight: 600; }
+    .price-chip.yes { color: var(--green); }
+    .price-chip.no { color: var(--red); }
+    .price-chip.spread { color: var(--text3); font-size: 10px; }
+
+    /* Live price card */
+    .live-card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; max-width: 95%; width: 100%; border: 1px solid var(--border); }
+    .live-head { background: linear-gradient(135deg, #112211, #0a1f0a); padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .live-title { font-size: 12px; font-weight: 600; color: var(--green); display: flex; align-items: center; gap: 6px; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    .live-mkt { font-size: 10px; color: var(--text3); max-width: 180px; text-align: right; line-height: 1.3; }
+    .live-prices { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .live-side { padding: 14px; text-align: center; }
+    .live-side:first-child { border-right: 1px solid var(--border); }
+    .live-side-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; letter-spacing: 1px; }
+    .live-price { font-family: var(--mono); font-size: 30px; font-weight: 700; }
+    .live-price.yes { color: var(--green); }
+    .live-price.no { color: var(--red); }
+    .live-footer { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
+    .live-stat { padding: 8px; text-align: center; border-right: 1px solid var(--border); }
+    .live-stat:last-child { border-right: none; }
+    .live-stat-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text2); }
+    .live-stat-lbl { font-size: 9px; color: var(--text3); margin-top: 2px; }
+
+    /* Bet card */
+    .bet-card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; max-width: 95%; width: 100%; border: 1px solid var(--border); }
+    .bet-head { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .bet-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .bet-mkt { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .bet-body { padding: 12px 14px; }
+
+    /* YES/NO buttons */
+    .yesno-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .yn-btn { padding: 14px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; text-align: center; transition: all 0.15s; font-family: var(--sans); }
+    .yn-btn:active { transform: scale(0.97); }
+    .yn-btn.yes-btn { background: #112211; border-color: #2d6b3a; }
+    .yn-btn.yes-btn.sel { background: #1a3d26; border-color: var(--green); }
+    .yn-btn.no-btn { background: #2d1111; border-color: #6b2d2d; }
+    .yn-btn.no-btn.sel { background: #3d1a1a; border-color: var(--red); }
+    .yn-label { font-size: 20px; font-weight: 700; }
+    .yn-label.yes { color: var(--green); }
+    .yn-label.no { color: var(--red); }
+    .yn-price { font-family: var(--mono); font-size: 13px; margin-top: 4px; }
+    .yn-price.yes { color: var(--green); opacity: 0.8; }
+    .yn-price.no { color: var(--red); opacity: 0.8; }
+    .yn-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+    /* Amount selector */
+    .amount-section { margin-bottom: 12px; }
+    .amount-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; letter-spacing: 1px; }
+    .amount-field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .dollar { font-size: 20px; font-weight: 700; color: var(--text3); }
+    .amount-field { flex: 1; background: var(--input); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 20px; font-weight: 700; color: var(--text); font-family: var(--mono); outline: none; text-align: right; }
+    .amount-field:focus { border-color: var(--blue); }
+    .quick-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .qbtn { background: var(--input); border: 1px solid var(--border); border-radius: 8px; padding: 7px 4px; text-align: center; font-size: 12px; font-family: var(--mono); color: var(--text3); cursor: pointer; }
+    .qbtn:active { background: var(--surface2); color: var(--text); }
+
+    /* Profit preview */
+    .profit-preview { background: var(--input); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    .profit-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+    .profit-key { font-size: 12px; color: var(--text3); }
+    .profit-val { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+    .profit-val.green { color: var(--green); }
+    .profit-val.orange { color: var(--orange); }
+    .profit-val.white { color: var(--text); }
+    .profit-divider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+
+    /* Fire button */
+    .fire-btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; font-family: var(--sans); transition: all 0.15s; }
+    .fire-btn.ready-yes { background: var(--green); color: #0a1a0f; }
+    .fire-btn.ready-no { background: var(--red); color: #1a0a0a; }
+    .fire-btn.ready-yes:active, .fire-btn.ready-no:active { transform: scale(0.98); opacity: 0.9; }
+    .fire-btn.disabled { background: var(--input); color: var(--text3); cursor: not-allowed; }
+    .fire-btn.fired { background: var(--blue); color: white; }
+
+    /* Typing */
+    .typing { display: flex; gap: 4px; align-items: center; }
+    .tdot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: typing 1.2s infinite; }
+    .tdot:nth-child(2) { animation-delay: 0.2s; }
+    .tdot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* Input area */
+    .input-area { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 12px; z-index: 10; }
+    .input-row { display: flex; gap: 8px; align-items: center; }
+    .input-field { flex: 1; background: var(--input); border: 1px solid var(--border); border-radius: 22px; padding: 11px 16px; font-size: 14px; color: var(--text); font-family: var(--sans); outline: none; }
+    .input-field:focus { border-color: var(--blue); }
+    .input-field::placeholder { color: var(--text3); }
+    .send-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--blue); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .send-btn:active { opacity: 0.8; transform: scale(0.92); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
+    @keyframes in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .ani { animation: in 0.2s ease forwards; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="avatar">⚡</div>
+  <div style="flex:1">
+    <div class="hname">Radio Trader Bot</div>
+    <div class="hstatus"><div class="hdot"></div><span id="hstxt">conectado a Polymarket</span></div>
+  </div>
+</div>
+
+<div class="chat" id="chat"></div>
+
+<div class="input-area">
+  <div class="input-row">
+    <input class="input-field" id="urlinput" type="text" placeholder="Pega la URL del partido de Polymarket..." autocomplete="off" autocorrect="off" autocapitalize="off" />
+    <button class="send-btn" onclick="loadEvent()">➤</button>
+  </div>
+</div>
+
+<script>
+const BOT = "https://worker-production-b5c8.up.railway.app";
+let allMarkets = [], activeTab = '', selToken = null, selMktQ = '';
+let askPrice = null, bidPrice = null, spreadPrice = null;
+let selSide = null;
+let bookTimer = null;
+
+function now() { return new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}); }
+
+function scroll() { setTimeout(() => window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}), 80); }
+
+function addEl(el) {
+  document.getElementById('chat').appendChild(el);
+  scroll();
+  return el;
 }
 
-GAMMA_API = "https://gamma-api.polymarket.com"
+function botMsg(html) {
+  const d = document.createElement('div');
+  d.className = 'msg bot ani';
+  d.innerHTML = `<div class="bubble">${html}</div><div class="mtime">${now()}</div>`;
+  return addEl(d);
+}
 
+function userMsg(html) {
+  const d = document.createElement('div');
+  d.className = 'msg user ani';
+  d.innerHTML = `<div class="bubble">${html}</div><div class="mtime">${now()}</div>`;
+  return addEl(d);
+}
 
-async def handle_options(request):
-    return web.Response(status=200, headers=CORS)
+function showTyping() {
+  const d = document.createElement('div');
+  d.className = 'msg bot ani'; d.id = 'typing';
+  d.innerHTML = `<div class="bubble"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>`;
+  addEl(d);
+}
+function removeTyping() { const e = document.getElementById('typing'); if(e) e.remove(); }
 
+function setStatus(txt) { document.getElementById('hstxt').textContent = txt; }
 
-async def handle_health(request):
-    return web.json_response({
-        "status": "ok",
-        "markets_loaded": len(markets_cache),
-        "dry_run": cfg.DRY_RUN,
-    }, headers=CORS)
+// Market type classification
+function mtype(q) {
+  q = (q||'').toLowerCase();
+  if (q.includes('o/u') || q.includes('over') || q.includes('under')) return 'Totales';
+  if (q.includes('spread') || /[+-]\d+\.5/.test(q)) return 'Spread';
+  if (q.includes('both teams') || q.includes('btts')) return 'BTTS';
+  if (q.includes('exact score')) return 'Exacto';
+  return 'Moneyline';
+}
 
+function extractSlug(url) {
+  const parts = url.trim().replace(/\/$/, '').split('/');
+  return parts[parts.length-1] || '';
+}
 
-async def handle_debug(request):
-    sample = markets_cache[:30]
-    result = [{"question": m.get("question", ""), "title": m.get("title", "")} for m in sample]
-    return web.json_response({"total": len(markets_cache), "sample": result}, headers=CORS)
+async function loadEvent() {
+  const url = document.getElementById('urlinput').value.trim();
+  if (!url) return;
+  const slug = extractSlug(url);
+  if (!slug) return;
+  userMsg(url.length > 60 ? '...'+url.slice(-50) : url);
+  document.getElementById('urlinput').value = '';
+  showTyping();
+  setStatus('cargando...');
+  try {
+    const res = await fetch(`${BOT}/event?slug=${encodeURIComponent(slug)}`);
+    const data = await res.json();
+    removeTyping();
+    if (data.error) { botMsg(`❌ No encontré el partido.<br><small style="color:var(--text3)">${data.error}</small>`); setStatus('error'); return; }
+    allMarkets = data.markets || [];
+    renderEventCard(data.event || slug);
+    setStatus('en vivo · 1s');
+  } catch(e) {
+    removeTyping();
+    botMsg(`❌ Error de conexión`);
+    setStatus('sin conexión');
+  }
+}
 
+function renderEventCard(eventName) {
+  const types = [...new Set(allMarkets.map(m => mtype(m.question)))];
+  activeTab = types[0] || 'Moneyline';
 
-async def fetch_event_markets(session, slug):
-    """Fetch all markets for a given event slug. Returns (title, markets)."""
-    try:
-        async with session.get(f"{GAMMA_API}/events", params={"slug": slug}) as r:
-            if r.status != 200:
-                return None, []
-            data = await r.json()
-        events = data if isinstance(data, list) else data.get("events", [])
-        if not events:
-            return None, []
-        ev = events[0]
-        markets = []
-        for m in ev.get("markets", []):
-            question = m.get("question") or ev.get("title") or ""
-            raw_tokens = m.get("clobTokenIds") or []
-            if isinstance(raw_tokens, str):
-                try:
-                    raw_tokens = json.loads(raw_tokens)
-                except:
-                    raw_tokens = []
-            if not raw_tokens:
-                raw_tokens = [
-                    t.get("token_id") for t in m.get("tokens", [])
-                    if t.get("token_id")
-                ]
-            markets.append({
-                "id": m.get("id"),
-                "question": question,
-                "token_ids": raw_tokens,
-                "volume": m.get("volume"),
-                "outcomes": m.get("outcomes"),
-            })
-        return ev.get("title", slug), markets
-    except Exception as e:
-        log.warning(f"fetch_event_markets({slug}) error: {e}")
-        return None, []
+  const card = document.createElement('div');
+  card.className = 'card ani';
+  card.id = 'market-card';
+  card.innerHTML = `
+    <div class="card-head">
+      <div class="card-title">🏟 ${eventName}</div>
+      <div class="card-sub">${allMarkets.length} mercados · selecciona uno para apostar</div>
+    </div>
+    <div class="card-body">
+      <div class="tabs" id="tabs">${types.map(t=>`<div class="tab${t===activeTab?' active':''}" onclick="switchTab('${t}')">${t}</div>`).join('')}</div>
+      <div id="mlist"></div>
+    </div>`;
+  addEl(card);
+  renderMList();
+}
 
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.textContent===tab));
+  renderMList();
+}
 
-async def handle_event(request):
-    url = request.rel_url.query.get("url", "").strip()
-    slug = request.rel_url.query.get("slug", "").strip()
-    if url and not slug:
-        parts = [p for p in url.rstrip("/").split("/") if p]
-        slug = parts[-1] if parts else ""
-    if not slug:
-        return web.json_response({"error": "provide url or slug"}, headers=CORS, status=400)
+function renderMList() {
+  const container = document.getElementById('mlist');
+  if (!container) return;
+  const filtered = allMarkets.filter(m => mtype(m.question) === activeTab);
+  container.innerHTML = filtered.map((m, i) => {
+    const vol = m.volume ? `<span class="mitem-vol">Vol $${parseFloat(m.volume).toLocaleString('en',{maximumFractionDigits:0})}</span>` : '';
+    return `<div class="mitem${m.token_ids?.[0]===selToken?' sel':''}" onclick="pickMarket(${i})">
+      <div class="mitem-q">${m.question}</div>
+      <div class="mitem-row">${vol}</div>
+    </div>`;
+  }).join('');
 
-    try:
-        session = await poly._get_session()
+  // Auto-select highest volume
+  const byVol = [...filtered].sort((a,b)=>parseFloat(b.volume||0)-parseFloat(a.volume||0));
+  if (byVol.length) pickMarket(filtered.indexOf(byVol[0]));
+}
 
-        # Fetch main event and more-markets event in parallel
-        title1, markets1 = await fetch_event_markets(session, slug)
-        title2, markets2 = await fetch_event_markets(session, slug + "-more-markets")
+function pickMarket(idx) {
+  const filtered = allMarkets.filter(m => mtype(m.question) === activeTab);
+  const m = filtered[idx];
+  if (!m) return;
 
-        all_markets = markets1 + markets2
-        event_title = title1 or title2 or slug
+  // Highlight
+  document.querySelectorAll('.mitem').forEach((el,i) => el.classList.toggle('sel', i===idx));
 
-        # Deduplicate by market id
-        seen = set()
-        unique = []
-        for m in all_markets:
-            mid = m.get("id")
-            if mid not in seen:
-                seen.add(mid)
-                unique.append(m)
+  selToken = (m.token_ids||[])[0] || null;
+  selMktQ = m.question;
+  selSide = null;
 
-        if not unique:
-            return web.json_response(
-                {"error": f"No markets found for: {slug}"},
-                headers=CORS, status=404
-            )
+  // Start/restart price feed
+  if (bookTimer) clearInterval(bookTimer);
 
-        log.info(f"Event: {event_title} — {len(unique)} markets ({len(markets1)} main + {len(markets2)} more)")
-        return web.json_response({
-            "event": event_title,
-            "slug": slug,
-            "markets": unique,
-        }, headers=CORS)
+  // Remove old live/bet cards
+  ['live-card','bet-card'].forEach(id => { const e=document.getElementById(id); if(e) e.remove(); });
 
-    except Exception as e:
-        log.error(f"Event lookup error: {e}")
-        return web.json_response({"error": str(e)}, headers=CORS, status=500)
+  // Create live price card
+  const lc = document.createElement('div');
+  lc.className = 'live-card ani'; lc.id = 'live-card';
+  lc.innerHTML = `
+    <div class="live-head">
+      <div class="live-title"><div class="live-dot"></div>PRECIO EN VIVO</div>
+      <div class="live-mkt">${selMktQ.slice(0,45)}</div>
+    </div>
+    <div class="live-prices">
+      <div class="live-side">
+        <div class="live-side-label">YES</div>
+        <div class="live-price yes" id="lp-yes">—</div>
+      </div>
+      <div class="live-side">
+        <div class="live-side-label">NO</div>
+        <div class="live-price no" id="lp-no">—</div>
+      </div>
+    </div>
+    <div class="live-footer">
+      <div class="live-stat"><div class="live-stat-val" id="ls-bid">—</div><div class="live-stat-lbl">bid</div></div>
+      <div class="live-stat"><div class="live-stat-val" id="ls-ask">—</div><div class="live-stat-lbl">ask</div></div>
+      <div class="live-stat"><div class="live-stat-val" id="ls-spread">—</div><div class="live-stat-lbl">spread</div></div>
+    </div>`;
+  addEl(lc);
 
+  // Create bet card
+  renderBetCard();
 
-async def handle_search(request):
-    home = request.rel_url.query.get("home", "").strip()
-    away = request.rel_url.query.get("away", "").strip()
-    query = " ".join(filter(None, [home, away]))
-    if not query:
-        return web.json_response(
-            {"error": "provide at least one team"},
-            headers=CORS, status=400
-        )
-    try:
-        words = [w for w in query.lower().split() if len(w) > 2]
-        results = []
-        for m in markets_cache:
-            q = (m.get("question") or m.get("title") or "").lower()
-            if any(w in q for w in words):
-                raw_tokens = m.get("clobTokenIds") or []
-                if isinstance(raw_tokens, str):
-                    try:
-                        raw_tokens = json.loads(raw_tokens)
-                    except:
-                        raw_tokens = []
-                results.append({
-                    "id": m.get("id"),
-                    "question": m.get("question") or m.get("title"),
-                    "token_ids": raw_tokens,
-                    "volume": m.get("volume"),
-                })
-        seen = set()
-        unique = []
-        for r in results:
-            if r["question"] not in seen:
-                seen.add(r["question"])
-                unique.append(r)
-        return web.json_response({"markets": unique[:8]}, headers=CORS)
-    except Exception as e:
-        return web.json_response({"error": str(e)}, headers=CORS, status=500)
+  fetchBook();
+  bookTimer = setInterval(fetchBook, 1000);
+}
 
+function renderBetCard() {
+  const old = document.getElementById('bet-card'); if(old) old.remove();
+  const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
 
-async def handle_orderbook(request):
-    token_id = request.rel_url.query.get("token_id", "").strip()
-    if not token_id:
-        return web.json_response(
-            {"error": "token_id required"},
-            headers=CORS, status=400
-        )
-    try:
-        book = await poly.get_orderbook(token_id)
-        if not book:
-            return web.json_response({"error": "no book"}, headers=CORS, status=404)
-        return web.json_response({
-            "best_ask": poly.best_ask(book),
-            "best_bid": poly.best_bid(book),
-            "spread":   poly.spread(book),
-            "bids":     book.get("bids", [])[:6],
-            "asks":     book.get("asks", [])[:6],
-        }, headers=CORS)
-    except Exception as e:
-        return web.json_response({"error": str(e)}, headers=CORS, status=500)
+  const bc = document.createElement('div');
+  bc.className = 'bet-card ani'; bc.id = 'bet-card';
 
+  let profitHtml = '';
+  if (selSide && askPrice) {
+    const price = selSide==='YES' ? askPrice : (1-askPrice);
+    const shares = amount / price;
+    const profit = shares - amount;
+    const returnTotal = shares;
+    profitHtml = `
+      <div class="profit-preview">
+        <div class="profit-row"><span class="profit-key">Precio de entrada</span><span class="profit-val white">${(price*100).toFixed(1)}¢</span></div>
+        <div class="profit-row"><span class="profit-key">Shares compradas</span><span class="profit-val white">${shares.toFixed(2)}</span></div>
+        <hr class="profit-divider">
+        <div class="profit-row"><span class="profit-key">Retorno si gana</span><span class="profit-val green">$${returnTotal.toFixed(2)}</span></div>
+        <div class="profit-row"><span class="profit-key">Ganancia neta</span><span class="profit-val green">+$${profit.toFixed(2)}</span></div>
+        <div class="profit-row"><span class="profit-key">Pérdida si falla</span><span class="profit-val orange">-$${amount.toFixed(2)}</span></div>
+      </div>`;
+  }
 
-async def refresh_markets():
-    global markets_cache
-    while True:
-        try:
-            markets_cache = await poly.get_football_markets(limit=200)
-            log.info(f"Markets refreshed: {len(markets_cache)}")
-        except Exception as e:
-            log.error(f"Market refresh failed: {e}")
-        await asyncio.sleep(300)
+  const btnClass = selSide && askPrice ? (selSide==='YES'?'ready-yes':'ready-no') : 'disabled';
+  const btnText = selSide && askPrice
+    ? (selSide==='YES'
+        ? `⚡ APOSTAR YES · $${amount} → +$${askPrice ? ((amount/askPrice)-amount).toFixed(2) : '?'}`
+        : `⚡ APOSTAR NO · $${amount} → +$${askPrice ? ((amount/(1-askPrice))-amount).toFixed(2) : '?'}`)
+    : 'Selecciona YES o NO';
 
+  const yesSel = selSide==='YES' ? 'sel' : '';
+  const noSel = selSide==='NO' ? 'sel' : '';
+  const yesPrice = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
+  const noPrice = askPrice ? ((1-askPrice)*100).toFixed(1)+'¢' : '—';
 
-async def main():
-    log.info("=" * 60)
-    log.info("POLYMARKET BOT + API — STARTING")
-    log.info(f"Mode: {'DRY RUN' if cfg.DRY_RUN else 'LIVE'}")
-    log.info("=" * 60)
+  bc.innerHTML = `
+    <div class="bet-head">
+      <div class="bet-title">💸 Colocar apuesta</div>
+      <div class="bet-mkt">${selMktQ.slice(0,55)}</div>
+    </div>
+    <div class="bet-body">
+      <div class="yesno-row">
+        <div class="yn-btn yes-btn ${yesSel}" onclick="pickSide('YES')">
+          <div class="yn-label yes">YES</div>
+          <div class="yn-price yes">${yesPrice}</div>
+          <div class="yn-sub">si ocurre</div>
+        </div>
+        <div class="yn-btn no-btn ${noSel}" onclick="pickSide('NO')">
+          <div class="yn-label no">NO</div>
+          <div class="yn-price no">${noPrice}</div>
+          <div class="yn-sub">si no ocurre</div>
+        </div>
+      </div>
+      <div class="amount-section">
+        <div class="amount-label">CANTIDAD</div>
+        <div class="amount-field-row">
+          <span class="dollar">$</span>
+          <input class="amount-field" id="betamount" type="number" value="50" min="1" oninput="renderBetCard()" />
+        </div>
+        <div class="quick-row">
+          <div class="qbtn" onclick="setAmt(10)">$10</div>
+          <div class="qbtn" onclick="setAmt(25)">$25</div>
+          <div class="qbtn" onclick="setAmt(50)">$50</div>
+          <div class="qbtn" onclick="setAmt(100)">$100</div>
+          <div class="qbtn" onclick="setAmt(200)">$200</div>
+        </div>
+      </div>
+      ${profitHtml}
+      <button class="fire-btn ${btnClass}" onclick="fireOrder()">${btnText}</button>
+    </div>`;
+  addEl(bc);
+}
 
-    try:
-        markets_cache.extend(await poly.get_football_markets(limit=200))
-        log.info(f"Loaded {len(markets_cache)} markets")
-    except Exception as e:
-        log.error(f"Initial market load failed: {e}")
+function setAmt(v) {
+  const f = document.getElementById('betamount');
+  if (f) { f.value = v; renderBetCard(); }
+}
 
-    app = web.Application()
-    app.router.add_route("OPTIONS", "/{path_info:.*}", handle_options)
-    app.router.add_get("/health",    handle_health)
-    app.router.add_get("/debug",     handle_debug)
-    app.router.add_get("/event",     handle_event)
-    app.router.add_get("/search",    handle_search)
-    app.router.add_get("/orderbook", handle_orderbook)
+function pickSide(side) {
+  selSide = side;
+  renderBetCard();
+}
 
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8080)
-    await site.start()
-    log.info("API server running on port 8080")
+async function fetchBook() {
+  if (!selToken) return;
+  try {
+    const res = await fetch(`${BOT}/orderbook?token_id=${selToken}`);
+    const data = await res.json();
+    askPrice = data.best_ask;
+    bidPrice = data.best_bid;
+    spreadPrice = data.spread;
 
-    asyncio.create_task(refresh_markets())
+    // Update live card
+    const lpY = document.getElementById('lp-yes');
+    const lpN = document.getElementById('lp-no');
+    const lsB = document.getElementById('ls-bid');
+    const lsA = document.getElementById('ls-ask');
+    const lsS = document.getElementById('ls-spread');
 
-    while True:
-        await asyncio.sleep(60)
+    if (lpY) lpY.textContent = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
+    if (lpN) lpN.textContent = askPrice ? ((1-askPrice)*100).toFixed(1)+'¢' : '—';
+    if (lsB) lsB.textContent = bidPrice ? (bidPrice*100).toFixed(1)+'¢' : '—';
+    if (lsA) lsA.textContent = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
+    if (lsS) lsS.textContent = spreadPrice ? (spreadPrice*100).toFixed(1)+'¢' : '—';
 
+    // Update fire button text if side selected
+    if (selSide) {
+      const btn = document.querySelector('.fire-btn');
+      if (btn && askPrice) {
+        const price = selSide==='YES' ? askPrice : (1-askPrice);
+        const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
+        const profit = (amount/price - amount).toFixed(2);
+        btn.textContent = `⚡ APOSTAR ${selSide} · $${amount} → +$${profit}`;
+      }
+    }
+  } catch(e) {}
+}
 
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        log.info("Bot stopped")
+function fireOrder() {
+  if (!selSide || !askPrice) return;
+  const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
+  const price = selSide==='YES' ? askPrice : (1-askPrice);
+  const shares = (amount/price).toFixed(2);
+  const profit = (amount/price - amount).toFixed(2);
+
+  const btn = document.querySelector('#bet-card .fire-btn');
+  if (btn) { btn.className='fire-btn fired'; btn.textContent='✓ ORDEN ENVIADA'; }
+
+  botMsg(`
+    ✅ <b>Orden registrada</b><br>
+    ${selSide==='YES'?'🟢':'🔴'} <b>${selSide}</b> @ ${(price*100).toFixed(1)}¢<br>
+    💵 $${amount} → ${shares} shares<br>
+    📈 Ganancia potencial: <b>+$${profit}</b><br>
+    <br><small style="color:var(--text3)">🔒 DRY RUN — conecta wallet Polygon para órdenes reales</small>
+  `);
+
+  setTimeout(() => { selSide=null; renderBetCard(); }, 5000);
+}
+
+document.getElementById('urlinput').addEventListener('keydown', e => { if(e.key==='Enter') loadEvent(); });
+
+// Welcome message
+botMsg('👋 Hola! Pega la URL de un partido de Polymarket y te cargo todos sus mercados en tiempo real.');
+</script>
+</body>
+</html>
