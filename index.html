@@ -7,89 +7,73 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #17212b;
-      --surface: #242f3d;
-      --surface2: #1c2a35;
-      --blue: #2b9af3;
-      --blue2: #2b5278;
-      --green: #4dca6e;
-      --red: #f36d6d;
-      --orange: #f0a644;
-      --text: #ffffff;
-      --text2: #aab8c2;
-      --text3: #5a7385;
-      --border: #1c2733;
-      --input: #1c2a35;
-      --mono: 'JetBrains Mono', monospace;
-      --sans: 'Inter', sans-serif;
+      --bg: #17212b; --surface: #242f3d; --surface2: #1c2a35;
+      --blue: #2b9af3; --blue2: #2b5278; --green: #4dca6e;
+      --red: #f36d6d; --orange: #f0a644; --text: #ffffff;
+      --text2: #aab8c2; --text3: #5a7385; --border: #1c2733;
+      --input: #1c2a35; --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
 
-    .header {
-      background: var(--surface); padding: 12px 16px;
-      display: flex; align-items: center; gap: 12px;
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
-    }
-    .avatar {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--blue), #1a6fa8);
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-    }
+    .header { background: var(--surface); padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), #1a6fa8); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
     .hname { font-size: 15px; font-weight: 600; }
-    .hstatus { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 4px; margin-top: 1px; }
-    .hdot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    .hstatus { font-size: 12px; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+    .hdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .hdot.green { background: var(--green); animation: pulse 2s infinite; }
+    .hdot.red { background: var(--red); }
+    .hdot.amber { background: var(--orange); animation: pulse 1s infinite; }
+    .hstatus-txt { font-size: 12px; }
 
-    .chat { padding: 12px 12px 110px; display: flex; flex-direction: column; gap: 8px; }
+    /* Connection banner */
+    .conn-banner { display: none; background: #3d1a1a; border-bottom: 1px solid #6b2d2d; padding: 8px 16px; font-size: 12px; color: var(--red); text-align: center; }
+    .conn-banner.visible { display: block; }
+
+    .chat { padding: 12px 12px 115px; display: flex; flex-direction: column; gap: 8px; }
 
     .msg { display: flex; flex-direction: column; }
-    .msg.bot { align-self: flex-start; max-width: 88%; }
-    .msg.user { align-self: flex-end; max-width: 88%; }
+    .msg.bot { align-self: flex-start; max-width: 90%; }
+    .msg.user { align-self: flex-end; max-width: 90%; }
     .bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; }
     .msg.bot .bubble { background: var(--surface); border-bottom-left-radius: 4px; }
     .msg.user .bubble { background: var(--blue2); border-bottom-right-radius: 4px; }
     .mtime { font-size: 11px; color: var(--text3); margin-top: 3px; padding: 0 4px; }
     .msg.user .mtime { text-align: right; }
 
-    /* Cards */
-    .card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; max-width: 95%; width: 100%; border: 1px solid var(--border); }
+    .card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; width: 100%; border: 1px solid var(--border); }
     .card-head { background: linear-gradient(135deg, #1a3a52, #0d2133); padding: 12px 14px; border-bottom: 1px solid var(--border); }
     .card-title { font-size: 14px; font-weight: 600; }
     .card-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
     .card-body { padding: 12px 14px; }
 
-    /* Tabs */
     .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; scrollbar-width: none; }
     .tabs::-webkit-scrollbar { display: none; }
-    .tab { background: var(--input); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; white-space: nowrap; font-size: 12px; color: var(--text3); cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+    .tab { background: var(--input); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; white-space: nowrap; font-size: 12px; color: var(--text3); cursor: pointer; flex-shrink: 0; }
     .tab.active { background: var(--blue); border-color: var(--blue); color: white; font-weight: 600; }
 
-    /* Market items */
-    .mitem { background: var(--input); border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+    .mitem { background: var(--input); border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; transition: border-color 0.15s; }
     .mitem:active { opacity: 0.75; }
     .mitem.sel { border-color: var(--blue); background: #1a2d3d; }
-    .mitem-q { font-size: 13px; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
-    .mitem-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .mitem-q { font-size: 13px; color: var(--text); line-height: 1.4; margin-bottom: 4px; }
     .mitem-vol { font-size: 11px; color: var(--text3); font-family: var(--mono); }
-    .price-chip { background: var(--surface); border-radius: 8px; padding: 4px 8px; font-family: var(--mono); font-size: 12px; font-weight: 600; }
-    .price-chip.yes { color: var(--green); }
-    .price-chip.no { color: var(--red); }
-    .price-chip.spread { color: var(--text3); font-size: 10px; }
 
-    /* Live price card */
-    .live-card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; max-width: 95%; width: 100%; border: 1px solid var(--border); }
+    /* Live card */
+    .live-card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; width: 100%; border: 1px solid var(--border); }
     .live-head { background: linear-gradient(135deg, #112211, #0a1f0a); padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .live-title { font-size: 12px; font-weight: 600; color: var(--green); display: flex; align-items: center; gap: 6px; }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
-    .live-mkt { font-size: 10px; color: var(--text3); max-width: 180px; text-align: right; line-height: 1.3; }
-    .live-prices { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1s infinite; }
+    .live-dot.off { background: var(--red); animation: none; }
+    .live-mkt { font-size: 10px; color: var(--text3); max-width: 160px; text-align: right; line-height: 1.3; }
+    .live-refresh { font-size: 9px; color: var(--text3); margin-top: 2px; text-align: right; }
+    .live-prices { display: grid; grid-template-columns: 1fr 1fr; }
     .live-side { padding: 14px; text-align: center; }
     .live-side:first-child { border-right: 1px solid var(--border); }
     .live-side-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; letter-spacing: 1px; }
-    .live-price { font-family: var(--mono); font-size: 30px; font-weight: 700; }
+    .live-price { font-family: var(--mono); font-size: 32px; font-weight: 700; transition: color 0.3s; }
     .live-price.yes { color: var(--green); }
     .live-price.no { color: var(--red); }
+    .live-price.flash-up { color: #ffffff; }
     .live-footer { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
     .live-stat { padding: 8px; text-align: center; border-right: 1px solid var(--border); }
     .live-stat:last-child { border-right: none; }
@@ -97,40 +81,37 @@
     .live-stat-lbl { font-size: 9px; color: var(--text3); margin-top: 2px; }
 
     /* Bet card */
-    .bet-card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; max-width: 95%; width: 100%; border: 1px solid var(--border); }
+    .bet-card { background: var(--surface); border-radius: 16px; border-bottom-left-radius: 4px; overflow: hidden; align-self: flex-start; width: 100%; border: 1px solid var(--border); }
     .bet-head { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-    .bet-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .bet-title { font-size: 13px; font-weight: 600; }
     .bet-mkt { font-size: 11px; color: var(--text3); margin-top: 2px; }
     .bet-body { padding: 12px 14px; }
 
-    /* YES/NO buttons */
     .yesno-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .yn-btn { padding: 14px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; text-align: center; transition: all 0.15s; font-family: var(--sans); }
+    .yn-btn { padding: 14px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; text-align: center; transition: all 0.15s; }
     .yn-btn:active { transform: scale(0.97); }
     .yn-btn.yes-btn { background: #112211; border-color: #2d6b3a; }
-    .yn-btn.yes-btn.sel { background: #1a3d26; border-color: var(--green); }
+    .yn-btn.yes-btn.sel { background: #1a3d26; border-color: var(--green); box-shadow: 0 0 12px rgba(77,202,110,0.2); }
     .yn-btn.no-btn { background: #2d1111; border-color: #6b2d2d; }
-    .yn-btn.no-btn.sel { background: #3d1a1a; border-color: var(--red); }
-    .yn-label { font-size: 20px; font-weight: 700; }
+    .yn-btn.no-btn.sel { background: #3d1a1a; border-color: var(--red); box-shadow: 0 0 12px rgba(243,109,109,0.2); }
+    .yn-label { font-size: 22px; font-weight: 700; }
     .yn-label.yes { color: var(--green); }
     .yn-label.no { color: var(--red); }
-    .yn-price { font-family: var(--mono); font-size: 13px; margin-top: 4px; }
-    .yn-price.yes { color: var(--green); opacity: 0.8; }
-    .yn-price.no { color: var(--red); opacity: 0.8; }
-    .yn-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    .yn-price { font-family: var(--mono); font-size: 14px; margin-top: 4px; }
+    .yn-price.yes { color: var(--green); opacity: 0.85; }
+    .yn-price.no { color: var(--red); opacity: 0.85; }
+    .yn-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
 
-    /* Amount selector */
     .amount-section { margin-bottom: 12px; }
-    .amount-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; letter-spacing: 1px; }
+    .amount-label { font-size: 10px; color: var(--text3); margin-bottom: 6px; letter-spacing: 1px; }
     .amount-field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .dollar { font-size: 20px; font-weight: 700; color: var(--text3); }
-    .amount-field { flex: 1; background: var(--input); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 20px; font-weight: 700; color: var(--text); font-family: var(--mono); outline: none; text-align: right; }
+    .amount-field { flex: 1; background: var(--input); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 22px; font-weight: 700; color: var(--text); font-family: var(--mono); outline: none; text-align: right; }
     .amount-field:focus { border-color: var(--blue); }
     .quick-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
     .qbtn { background: var(--input); border: 1px solid var(--border); border-radius: 8px; padding: 7px 4px; text-align: center; font-size: 12px; font-family: var(--mono); color: var(--text3); cursor: pointer; }
-    .qbtn:active { background: var(--surface2); color: var(--text); }
+    .qbtn:active { background: var(--blue2); color: var(--text); }
 
-    /* Profit preview */
     .profit-preview { background: var(--input); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
     .profit-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
     .profit-key { font-size: 12px; color: var(--text3); }
@@ -140,7 +121,6 @@
     .profit-val.white { color: var(--text); }
     .profit-divider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
 
-    /* Fire button */
     .fire-btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; font-family: var(--sans); transition: all 0.15s; }
     .fire-btn.ready-yes { background: var(--green); color: #0a1a0f; }
     .fire-btn.ready-no { background: var(--red); color: #1a0a0a; }
@@ -148,22 +128,20 @@
     .fire-btn.disabled { background: var(--input); color: var(--text3); cursor: not-allowed; }
     .fire-btn.fired { background: var(--blue); color: white; }
 
-    /* Typing */
     .typing { display: flex; gap: 4px; align-items: center; }
     .tdot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: typing 1.2s infinite; }
     .tdot:nth-child(2) { animation-delay: 0.2s; }
     .tdot:nth-child(3) { animation-delay: 0.4s; }
 
-    /* Input area */
     .input-area { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 12px; z-index: 10; }
     .input-row { display: flex; gap: 8px; align-items: center; }
     .input-field { flex: 1; background: var(--input); border: 1px solid var(--border); border-radius: 22px; padding: 11px 16px; font-size: 14px; color: var(--text); font-family: var(--sans); outline: none; }
     .input-field:focus { border-color: var(--blue); }
     .input-field::placeholder { color: var(--text3); }
-    .send-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--blue); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-    .send-btn:active { opacity: 0.8; transform: scale(0.92); }
+    .send-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--blue); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: transform 0.15s; }
+    .send-btn:active { transform: scale(0.9); }
 
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
     @keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
     @keyframes in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
     .ani { animation: in 0.2s ease forwards; }
@@ -177,35 +155,47 @@
   <div class="avatar">⚡</div>
   <div style="flex:1">
     <div class="hname">Radio Trader Bot</div>
-    <div class="hstatus"><div class="hdot"></div><span id="hstxt">conectado a Polymarket</span></div>
+    <div class="hstatus">
+      <div class="hdot green" id="hdot"></div>
+      <span class="hstatus-txt" id="hstxt">conectado · en vivo</span>
+    </div>
   </div>
+  <div style="font-size:11px;color:var(--text3);text-align:right;font-family:var(--mono)" id="tick-display"></div>
 </div>
+
+<div class="conn-banner" id="conn-banner">⚠️ Sin conexión — reconectando...</div>
 
 <div class="chat" id="chat"></div>
 
 <div class="input-area">
   <div class="input-row">
-    <input class="input-field" id="urlinput" type="text" placeholder="Pega la URL del partido de Polymarket..." autocomplete="off" autocorrect="off" autocapitalize="off" />
+    <input class="input-field" id="urlinput" type="text"
+      placeholder="Pega la URL del partido de Polymarket..." autocomplete="off" autocorrect="off" autocapitalize="off" />
     <button class="send-btn" onclick="loadEvent()">➤</button>
   </div>
 </div>
 
 <script>
 const BOT = "https://worker-production-b5c8.up.railway.app";
-let allMarkets = [], activeTab = '', selToken = null, selMktQ = '';
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allMarkets = [], activeTab = '';
+let selToken = null, selMktQ = '';
 let askPrice = null, bidPrice = null, spreadPrice = null;
 let selSide = null;
-let bookTimer = null;
+let bookTimer = null, keepaliveTimer = null, tickTimer = null;
+let consecutiveErrors = 0;
+let isOnline = true;
+let tickCount = 0;
+let lastPrice = null;
 
+// ── Helpers ────────────────────────────────────────────────────────────────
 function now() { return new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}); }
+function nowFull() { return new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
 
 function scroll() { setTimeout(() => window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}), 80); }
 
-function addEl(el) {
-  document.getElementById('chat').appendChild(el);
-  scroll();
-  return el;
-}
+function addEl(el) { document.getElementById('chat').appendChild(el); scroll(); return el; }
 
 function botMsg(html) {
   const d = document.createElement('div');
@@ -229,9 +219,56 @@ function showTyping() {
 }
 function removeTyping() { const e = document.getElementById('typing'); if(e) e.remove(); }
 
-function setStatus(txt) { document.getElementById('hstxt').textContent = txt; }
+function setStatus(txt, state='green') {
+  document.getElementById('hstxt').textContent = txt;
+  document.getElementById('hdot').className = `hdot ${state}`;
+}
 
-// Market type classification
+function setOnline(online) {
+  isOnline = online;
+  const banner = document.getElementById('conn-banner');
+  if (online) {
+    banner.classList.remove('visible');
+    setStatus('conectado · en vivo', 'green');
+  } else {
+    banner.classList.add('visible');
+    setStatus('sin conexión · reconectando...', 'red');
+  }
+}
+
+// ── Keepalive ──────────────────────────────────────────────────────────────
+// Pings the bot every 25s to prevent Railway from sleeping
+function startKeepalive() {
+  if (keepaliveTimer) clearInterval(keepaliveTimer);
+  keepaliveTimer = setInterval(async () => {
+    try {
+      await fetch(`${BOT}/health`, {cache: 'no-store'});
+    } catch(e) {}
+  }, 25000);
+}
+
+// ── Tick display ───────────────────────────────────────────────────────────
+function startTick() {
+  if (tickTimer) clearInterval(tickTimer);
+  tickTimer = setInterval(() => {
+    if (!selToken) return;
+    tickCount++;
+    document.getElementById('tick-display').textContent = nowFull();
+  }, 1000);
+}
+
+// ── Visibility API — reconectar cuando vuelves a la app ───────────────────
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && selToken) {
+    // App was in background, restart feed immediately
+    if (bookTimer) clearInterval(bookTimer);
+    fetchBook();
+    bookTimer = setInterval(fetchBook, 1000);
+    setStatus('reconectando...', 'amber');
+  }
+});
+
+// ── Market type ────────────────────────────────────────────────────────────
 function mtype(q) {
   q = (q||'').toLowerCase();
   if (q.includes('o/u') || q.includes('over') || q.includes('under')) return 'Totales';
@@ -246,44 +283,59 @@ function extractSlug(url) {
   return parts[parts.length-1] || '';
 }
 
+// ── Load event ─────────────────────────────────────────────────────────────
 async function loadEvent() {
   const url = document.getElementById('urlinput').value.trim();
   if (!url) return;
   const slug = extractSlug(url);
   if (!slug) return;
-  userMsg(url.length > 60 ? '...'+url.slice(-50) : url);
+
+  userMsg(url.length > 55 ? '...'+url.slice(-50) : url);
   document.getElementById('urlinput').value = '';
+
   showTyping();
-  setStatus('cargando...');
+  setStatus('cargando partido...', 'amber');
+
   try {
-    const res = await fetch(`${BOT}/event?slug=${encodeURIComponent(slug)}`);
+    const res = await fetch(`${BOT}/event?slug=${encodeURIComponent(slug)}`, {cache:'no-store'});
     const data = await res.json();
     removeTyping();
-    if (data.error) { botMsg(`❌ No encontré el partido.<br><small style="color:var(--text3)">${data.error}</small>`); setStatus('error'); return; }
+
+    if (data.error) {
+      botMsg(`❌ No encontré el partido.<br><small style="color:var(--text3)">${data.error}</small>`);
+      setStatus('error', 'red');
+      return;
+    }
+
     allMarkets = data.markets || [];
     renderEventCard(data.event || slug);
-    setStatus('en vivo · 1s');
+    startKeepalive();
+    startTick();
+    setOnline(true);
+
   } catch(e) {
     removeTyping();
-    botMsg(`❌ Error de conexión`);
-    setStatus('sin conexión');
+    botMsg(`❌ Error de conexión: ${e.message}`);
+    setStatus('error', 'red');
   }
 }
 
+// ── Render event card ──────────────────────────────────────────────────────
 function renderEventCard(eventName) {
   const types = [...new Set(allMarkets.map(m => mtype(m.question)))];
   activeTab = types[0] || 'Moneyline';
 
   const card = document.createElement('div');
-  card.className = 'card ani';
-  card.id = 'market-card';
+  card.className = 'card ani'; card.id = 'market-card';
   card.innerHTML = `
     <div class="card-head">
       <div class="card-title">🏟 ${eventName}</div>
-      <div class="card-sub">${allMarkets.length} mercados · selecciona uno para apostar</div>
+      <div class="card-sub">${allMarkets.length} mercados · toca uno para ver precios en vivo</div>
     </div>
     <div class="card-body">
-      <div class="tabs" id="tabs">${types.map(t=>`<div class="tab${t===activeTab?' active':''}" onclick="switchTab('${t}')">${t}</div>`).join('')}</div>
+      <div class="tabs" id="tabs">
+        ${types.map(t=>`<div class="tab${t===activeTab?' active':''}" onclick="switchTab('${t}')">${t}</div>`).join('')}
+      </div>
       <div id="mlist"></div>
     </div>`;
   addEl(card);
@@ -301,32 +353,37 @@ function renderMList() {
   if (!container) return;
   const filtered = allMarkets.filter(m => mtype(m.question) === activeTab);
   container.innerHTML = filtered.map((m, i) => {
-    const vol = m.volume ? `<span class="mitem-vol">Vol $${parseFloat(m.volume).toLocaleString('en',{maximumFractionDigits:0})}</span>` : '';
-    return `<div class="mitem${m.token_ids?.[0]===selToken?' sel':''}" onclick="pickMarket(${i})">
+    const vol = m.volume
+      ? `<span class="mitem-vol">Vol $${parseFloat(m.volume).toLocaleString('en',{maximumFractionDigits:0})}</span>`
+      : '';
+    const isSel = (m.token_ids||[])[0] === selToken;
+    return `<div class="mitem${isSel?' sel':''}" id="mitem-${i}" onclick="pickMarket(${i})">
       <div class="mitem-q">${m.question}</div>
-      <div class="mitem-row">${vol}</div>
+      ${vol ? `<div style="margin-top:4px">${vol}</div>` : ''}
     </div>`;
   }).join('');
 
   // Auto-select highest volume
   const byVol = [...filtered].sort((a,b)=>parseFloat(b.volume||0)-parseFloat(a.volume||0));
-  if (byVol.length) pickMarket(filtered.indexOf(byVol[0]));
+  if (byVol.length) {
+    const idx = filtered.indexOf(byVol[0]);
+    pickMarket(idx);
+  }
 }
 
+// ── Pick market ────────────────────────────────────────────────────────────
 function pickMarket(idx) {
   const filtered = allMarkets.filter(m => mtype(m.question) === activeTab);
   const m = filtered[idx];
   if (!m) return;
 
-  // Highlight
   document.querySelectorAll('.mitem').forEach((el,i) => el.classList.toggle('sel', i===idx));
 
   selToken = (m.token_ids||[])[0] || null;
   selMktQ = m.question;
   selSide = null;
-
-  // Start/restart price feed
-  if (bookTimer) clearInterval(bookTimer);
+  askPrice = null; bidPrice = null; spreadPrice = null;
+  consecutiveErrors = 0;
 
   // Remove old live/bet cards
   ['live-card','bet-card'].forEach(id => { const e=document.getElementById(id); if(e) e.remove(); });
@@ -336,8 +393,11 @@ function pickMarket(idx) {
   lc.className = 'live-card ani'; lc.id = 'live-card';
   lc.innerHTML = `
     <div class="live-head">
-      <div class="live-title"><div class="live-dot"></div>PRECIO EN VIVO</div>
-      <div class="live-mkt">${selMktQ.slice(0,45)}</div>
+      <div class="live-title"><div class="live-dot" id="live-dot"></div>PRECIO EN VIVO</div>
+      <div>
+        <div class="live-mkt">${selMktQ.slice(0,45)}</div>
+        <div class="live-refresh" id="live-refresh">—</div>
+      </div>
     </div>
     <div class="live-prices">
       <div class="live-side">
@@ -356,49 +416,145 @@ function pickMarket(idx) {
     </div>`;
   addEl(lc);
 
-  // Create bet card
   renderBetCard();
 
+  // Start live feed
+  if (bookTimer) clearInterval(bookTimer);
   fetchBook();
   bookTimer = setInterval(fetchBook, 1000);
 }
 
+// ── Fetch orderbook ────────────────────────────────────────────────────────
+async function fetchBook() {
+  if (!selToken) return;
+  try {
+    const res = await fetch(`${BOT}/orderbook?token_id=${selToken}`, {cache:'no-store'});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const prevAsk = askPrice;
+    askPrice = data.best_ask;
+    bidPrice = data.best_bid;
+    spreadPrice = data.spread;
+
+    consecutiveErrors = 0;
+    if (!isOnline) setOnline(true);
+
+    // Update live card elements
+    const lpY = document.getElementById('lp-yes');
+    const lpN = document.getElementById('lp-no');
+    const lsB = document.getElementById('ls-bid');
+    const lsA = document.getElementById('ls-ask');
+    const lsS = document.getElementById('ls-spread');
+    const lRef = document.getElementById('live-refresh');
+    const lDot = document.getElementById('live-dot');
+
+    if (lpY) {
+      const yTxt = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
+      // Flash if price changed
+      if (prevAsk && askPrice && Math.abs(askPrice - prevAsk) > 0.001) {
+        lpY.style.color = askPrice > prevAsk ? '#ffffff' : '#ffaaaa';
+        setTimeout(() => { if(lpY) lpY.style.color = ''; }, 400);
+      }
+      lpY.textContent = yTxt;
+    }
+    if (lpN) lpN.textContent = askPrice ? ((1-askPrice)*100).toFixed(1)+'¢' : '—';
+    if (lsB) lsB.textContent = bidPrice ? (bidPrice*100).toFixed(1)+'¢' : '—';
+    if (lsA) lsA.textContent = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
+    if (lsS) lsS.textContent = spreadPrice ? (spreadPrice*100).toFixed(1)+'¢' : '—';
+    if (lRef) lRef.textContent = 'actualizado ' + nowFull();
+    if (lDot) lDot.className = 'live-dot';
+
+    // Update bet card prices and button if side selected
+    updateBetPrices();
+
+  } catch(e) {
+    consecutiveErrors++;
+    const lDot = document.getElementById('live-dot');
+    if (lDot) lDot.className = 'live-dot off';
+
+    if (consecutiveErrors >= 5) {
+      setOnline(false);
+      // Try to reconnect after 3s
+      setTimeout(() => {
+        if (selToken) fetchBook();
+      }, 3000);
+    }
+  }
+}
+
+// ── Update bet prices without full re-render ───────────────────────────────
+function updateBetPrices() {
+  if (!askPrice) return;
+
+  const yesBtn = document.querySelector('.yn-btn.yes-btn');
+  const noBtn = document.querySelector('.yn-btn.no-btn');
+  if (yesBtn) {
+    const yp = yesBtn.querySelector('.yn-price');
+    if (yp) yp.textContent = (askPrice*100).toFixed(1)+'¢';
+  }
+  if (noBtn) {
+    const np = noBtn.querySelector('.yn-price');
+    if (np) np.textContent = ((1-askPrice)*100).toFixed(1)+'¢';
+  }
+
+  if (selSide) {
+    const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
+    const price = selSide==='YES' ? askPrice : (1-askPrice);
+    const profit = (amount/price - amount).toFixed(2);
+    const btn = document.querySelector('#bet-card .fire-btn');
+    if (btn && !btn.classList.contains('fired')) {
+      btn.textContent = `⚡ APOSTAR ${selSide} · $${amount} → +$${profit}`;
+    }
+    // Update profit preview
+    updateProfitPreview(amount, price);
+  }
+}
+
+function updateProfitPreview(amount, price) {
+  const preview = document.getElementById('profit-preview');
+  if (!preview) return;
+  const shares = amount / price;
+  const profit = shares - amount;
+  preview.innerHTML = `
+    <div class="profit-row"><span class="profit-key">Precio de entrada</span><span class="profit-val white">${(price*100).toFixed(1)}¢</span></div>
+    <div class="profit-row"><span class="profit-key">Shares compradas</span><span class="profit-val white">${shares.toFixed(2)}</span></div>
+    <hr class="profit-divider">
+    <div class="profit-row"><span class="profit-key">Retorno si gana</span><span class="profit-val green">$${shares.toFixed(2)}</span></div>
+    <div class="profit-row"><span class="profit-key">Ganancia neta</span><span class="profit-val green">+$${profit.toFixed(2)}</span></div>
+    <div class="profit-row"><span class="profit-key">Pérdida si falla</span><span class="profit-val orange">-$${amount.toFixed(2)}</span></div>`;
+}
+
+// ── Render bet card ────────────────────────────────────────────────────────
 function renderBetCard() {
   const old = document.getElementById('bet-card'); if(old) old.remove();
   const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
-
-  const bc = document.createElement('div');
-  bc.className = 'bet-card ani'; bc.id = 'bet-card';
+  const yesPrice = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
+  const noPrice = askPrice ? ((1-askPrice)*100).toFixed(1)+'¢' : '—';
+  const yesSel = selSide==='YES' ? 'sel' : '';
+  const noSel = selSide==='NO' ? 'sel' : '';
 
   let profitHtml = '';
+  let btnClass = 'disabled', btnText = 'Selecciona YES o NO';
+
   if (selSide && askPrice) {
     const price = selSide==='YES' ? askPrice : (1-askPrice);
     const shares = amount / price;
     const profit = shares - amount;
-    const returnTotal = shares;
-    profitHtml = `
-      <div class="profit-preview">
-        <div class="profit-row"><span class="profit-key">Precio de entrada</span><span class="profit-val white">${(price*100).toFixed(1)}¢</span></div>
-        <div class="profit-row"><span class="profit-key">Shares compradas</span><span class="profit-val white">${shares.toFixed(2)}</span></div>
-        <hr class="profit-divider">
-        <div class="profit-row"><span class="profit-key">Retorno si gana</span><span class="profit-val green">$${returnTotal.toFixed(2)}</span></div>
-        <div class="profit-row"><span class="profit-key">Ganancia neta</span><span class="profit-val green">+$${profit.toFixed(2)}</span></div>
-        <div class="profit-row"><span class="profit-key">Pérdida si falla</span><span class="profit-val orange">-$${amount.toFixed(2)}</span></div>
-      </div>`;
+    profitHtml = `<div class="profit-preview" id="profit-preview">
+      <div class="profit-row"><span class="profit-key">Precio de entrada</span><span class="profit-val white">${(price*100).toFixed(1)}¢</span></div>
+      <div class="profit-row"><span class="profit-key">Shares compradas</span><span class="profit-val white">${shares.toFixed(2)}</span></div>
+      <hr class="profit-divider">
+      <div class="profit-row"><span class="profit-key">Retorno si gana</span><span class="profit-val green">$${shares.toFixed(2)}</span></div>
+      <div class="profit-row"><span class="profit-key">Ganancia neta</span><span class="profit-val green">+$${profit.toFixed(2)}</span></div>
+      <div class="profit-row"><span class="profit-key">Pérdida si falla</span><span class="profit-val orange">-$${amount.toFixed(2)}</span></div>
+    </div>`;
+    btnClass = selSide==='YES' ? 'ready-yes' : 'ready-no';
+    btnText = `⚡ APOSTAR ${selSide} · $${amount} → +$${profit.toFixed(2)}`;
   }
 
-  const btnClass = selSide && askPrice ? (selSide==='YES'?'ready-yes':'ready-no') : 'disabled';
-  const btnText = selSide && askPrice
-    ? (selSide==='YES'
-        ? `⚡ APOSTAR YES · $${amount} → +$${askPrice ? ((amount/askPrice)-amount).toFixed(2) : '?'}`
-        : `⚡ APOSTAR NO · $${amount} → +$${askPrice ? ((amount/(1-askPrice))-amount).toFixed(2) : '?'}`)
-    : 'Selecciona YES o NO';
-
-  const yesSel = selSide==='YES' ? 'sel' : '';
-  const noSel = selSide==='NO' ? 'sel' : '';
-  const yesPrice = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
-  const noPrice = askPrice ? ((1-askPrice)*100).toFixed(1)+'¢' : '—';
-
+  const bc = document.createElement('div');
+  bc.className = 'bet-card ani'; bc.id = 'bet-card';
   bc.innerHTML = `
     <div class="bet-head">
       <div class="bet-title">💸 Colocar apuesta</div>
@@ -421,7 +577,7 @@ function renderBetCard() {
         <div class="amount-label">CANTIDAD</div>
         <div class="amount-field-row">
           <span class="dollar">$</span>
-          <input class="amount-field" id="betamount" type="number" value="50" min="1" oninput="renderBetCard()" />
+          <input class="amount-field" id="betamount" type="number" value="${amount}" min="1" oninput="onAmountChange()" />
         </div>
         <div class="quick-row">
           <div class="qbtn" onclick="setAmt(10)">$10</div>
@@ -437,9 +593,20 @@ function renderBetCard() {
   addEl(bc);
 }
 
+function onAmountChange() {
+  if (selSide && askPrice) {
+    const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
+    const price = selSide==='YES' ? askPrice : (1-askPrice);
+    const profit = (amount/price - amount).toFixed(2);
+    const btn = document.querySelector('#bet-card .fire-btn');
+    if (btn) btn.textContent = `⚡ APOSTAR ${selSide} · $${amount} → +$${profit}`;
+    updateProfitPreview(amount, price);
+  }
+}
+
 function setAmt(v) {
   const f = document.getElementById('betamount');
-  if (f) { f.value = v; renderBetCard(); }
+  if (f) { f.value = v; onAmountChange(); }
 }
 
 function pickSide(side) {
@@ -447,41 +614,7 @@ function pickSide(side) {
   renderBetCard();
 }
 
-async function fetchBook() {
-  if (!selToken) return;
-  try {
-    const res = await fetch(`${BOT}/orderbook?token_id=${selToken}`);
-    const data = await res.json();
-    askPrice = data.best_ask;
-    bidPrice = data.best_bid;
-    spreadPrice = data.spread;
-
-    // Update live card
-    const lpY = document.getElementById('lp-yes');
-    const lpN = document.getElementById('lp-no');
-    const lsB = document.getElementById('ls-bid');
-    const lsA = document.getElementById('ls-ask');
-    const lsS = document.getElementById('ls-spread');
-
-    if (lpY) lpY.textContent = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
-    if (lpN) lpN.textContent = askPrice ? ((1-askPrice)*100).toFixed(1)+'¢' : '—';
-    if (lsB) lsB.textContent = bidPrice ? (bidPrice*100).toFixed(1)+'¢' : '—';
-    if (lsA) lsA.textContent = askPrice ? (askPrice*100).toFixed(1)+'¢' : '—';
-    if (lsS) lsS.textContent = spreadPrice ? (spreadPrice*100).toFixed(1)+'¢' : '—';
-
-    // Update fire button text if side selected
-    if (selSide) {
-      const btn = document.querySelector('.fire-btn');
-      if (btn && askPrice) {
-        const price = selSide==='YES' ? askPrice : (1-askPrice);
-        const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
-        const profit = (amount/price - amount).toFixed(2);
-        btn.textContent = `⚡ APOSTAR ${selSide} · $${amount} → +$${profit}`;
-      }
-    }
-  } catch(e) {}
-}
-
+// ── Fire order ─────────────────────────────────────────────────────────────
 function fireOrder() {
   if (!selSide || !askPrice) return;
   const amount = parseFloat(document.getElementById('betamount')?.value||'50')||50;
@@ -500,13 +633,13 @@ function fireOrder() {
     <br><small style="color:var(--text3)">🔒 DRY RUN — conecta wallet Polygon para órdenes reales</small>
   `);
 
-  setTimeout(() => { selSide=null; renderBetCard(); }, 5000);
+  setTimeout(() => { selSide=null; renderBetCard(); }, 6000);
 }
 
+// ── Init ───────────────────────────────────────────────────────────────────
 document.getElementById('urlinput').addEventListener('keydown', e => { if(e.key==='Enter') loadEvent(); });
-
-// Welcome message
-botMsg('👋 Hola! Pega la URL de un partido de Polymarket y te cargo todos sus mercados en tiempo real.');
+botMsg('👋 Hola! Pega la URL de un partido de Polymarket.<br><small style="color:var(--text3)">El precio se actualizará cada segundo automáticamente.</small>');
+startKeepalive();
 </script>
 </body>
 </html>
