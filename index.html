@@ -57,9 +57,10 @@
     .mitem:active{opacity:0.7}
     .mitem.sel{border-color:var(--blue);background:#1a2d3d}
     .mitem-q{font-size:13px;color:var(--text);line-height:1.4}
-    .mitem-vol{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px}
+    .mitem-meta{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+    .mitem-chip{font-size:10px;color:var(--text3);font-family:var(--mono);background:var(--surface);padding:2px 7px;border-radius:5px}
+    .mitem-chip.vol{color:var(--blue-light,#5ab3f7)}
 
-    /* Live card */
     .live-card{background:var(--surface);border-radius:16px;border-bottom-left-radius:4px;overflow:hidden;align-self:flex-start;width:100%;border:1px solid var(--border)}
     .live-head{background:linear-gradient(135deg,#112211,#0a1f0a);padding:9px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
     .live-title{font-size:11px;font-weight:600;color:var(--green);display:flex;align-items:center;gap:5px}
@@ -69,50 +70,44 @@
     .live-mkt{font-size:10px;color:var(--text3);max-width:150px;line-height:1.3}
     .live-ts{font-size:9px;color:var(--text3);margin-top:1px;font-family:var(--mono)}
 
-    /* Dynamic outcome prices — supports 2, 3+ outcomes */
     .live-prices{display:grid;border-bottom:1px solid var(--border)}
     .live-prices.two{grid-template-columns:1fr 1fr}
     .live-prices.three{grid-template-columns:1fr 1fr 1fr}
     .live-side{padding:12px 8px;text-align:center;border-right:1px solid var(--border)}
     .live-side:last-child{border-right:none}
-    .live-side-label{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .live-price{font-family:var(--mono);font-size:28px;font-weight:700;transition:color 0.25s}
+    .live-side-label{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:0.5px}
+    .live-price{font-family:var(--mono);font-size:26px;font-weight:700;transition:color 0.25s}
     .live-price.c0{color:var(--green)}
     .live-price.c1{color:var(--red)}
     .live-price.c2{color:var(--orange)}
+    .live-usdc{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:3px}
 
-    .live-footer{display:grid;grid-template-columns:1fr 1fr 1fr}
-    .live-stat{padding:7px;text-align:center;border-right:1px solid var(--border)}
+    .live-footer{display:grid;grid-template-columns:repeat(5,1fr)}
+    .live-stat{padding:7px 4px;text-align:center;border-right:1px solid var(--border)}
     .live-stat:last-child{border-right:none}
-    .live-stat-val{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text2)}
+    .live-stat-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text2)}
     .live-stat-lbl{font-size:9px;color:var(--text3);margin-top:1px}
 
-    /* Bet card */
     .bet-card{background:var(--surface);border-radius:16px;border-bottom-left-radius:4px;overflow:hidden;align-self:flex-start;width:100%;border:1px solid var(--border)}
     .bet-head{padding:11px 13px;border-bottom:1px solid var(--border);background:var(--surface2)}
     .bet-title{font-size:13px;font-weight:600}
     .bet-mkt{font-size:10px;color:var(--text3);margin-top:2px}
     .bet-body{padding:12px 13px}
 
-    /* Outcome buttons — dynamic grid */
     .outcome-row{display:grid;gap:8px;margin-bottom:12px}
     .outcome-row.two{grid-template-columns:1fr 1fr}
     .outcome-row.three{grid-template-columns:1fr 1fr 1fr}
-    .outcome-row.four{grid-template-columns:1fr 1fr}
 
-    .oc-btn{padding:13px 6px;border-radius:12px;border:2px solid transparent;cursor:pointer;text-align:center;transition:all 0.15s;background:var(--input);border-color:var(--border)}
+    .oc-btn{padding:12px 6px;border-radius:12px;border:2px solid transparent;cursor:pointer;text-align:center;transition:all 0.15s;background:var(--input);border-color:var(--border)}
     .oc-btn:active{transform:scale(0.97)}
     .oc-btn.sel-0{background:#1a3d26;border-color:var(--green);box-shadow:0 0 12px rgba(77,202,110,0.2)}
     .oc-btn.sel-1{background:#3d1a1a;border-color:var(--red);box-shadow:0 0 12px rgba(243,109,109,0.2)}
     .oc-btn.sel-2{background:#3d2d0d;border-color:var(--orange);box-shadow:0 0 12px rgba(240,166,68,0.2)}
-    .oc-label{font-size:15px;font-weight:700;margin-bottom:4px}
-    .oc-label.c0{color:var(--green)}
-    .oc-label.c1{color:var(--red)}
-    .oc-label.c2{color:var(--orange)}
-    .oc-price{font-family:var(--mono);font-size:14px;margin-top:2px;color:var(--text2)}
-    .oc-price.c0{color:var(--green);opacity:0.85}
-    .oc-price.c1{color:var(--red);opacity:0.85}
-    .oc-price.c2{color:var(--orange);opacity:0.85}
+    .oc-label{font-size:15px;font-weight:700;margin-bottom:3px}
+    .oc-label.c0{color:var(--green)}.oc-label.c1{color:var(--red)}.oc-label.c2{color:var(--orange)}
+    .oc-price{font-family:var(--mono);font-size:14px;margin-top:1px}
+    .oc-price.c0{color:var(--green);opacity:0.85}.oc-price.c1{color:var(--red);opacity:0.85}.oc-price.c2{color:var(--orange);opacity:0.85}
+    .oc-depth{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:3px}
 
     .amount-section{margin-bottom:12px}
     .amount-lbl{font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:1px}
@@ -191,23 +186,24 @@
 </div>
 
 <script>
-const BOT = "https://worker-production-b5c8.up.railway.app";
-const LS_KEY = "polybot_last_url";
+const BOT="https://worker-production-b5c8.up.railway.app";
+const LS_KEY="polybot_last_url";
 
-let allMarkets=[], activeTab='';
-let selToken=null, selToken2=null; // token2 for second outcome (NO/Under/Away)
-let selMktQ='', selOutcomes=[];
-let prices={}; // { token_id: { best_ask, best_bid, spread, ts } }
+let allMarkets=[],activeTab='';
+let selToken=null,selToken2=null;
+let selMktQ='',selOutcomes=[];
+let prices={};
 let selOutcomeIdx=null;
-let bookTimer=null, keepaliveTimer=null, tickTimer=null;
-let errCount=0, isOnline=true;
+let bookTimer=null,keepaliveTimer=null,tickTimer=null;
+let errCount=0,isOnline=true;
 
-const COLORS = ['c0','c1','c2','c3'];
-const SEL_COLORS = ['sel-0','sel-1','sel-2','sel-3'];
-const BTN_COLORS = ['r0','r1','r2'];
+const COLORS=['c0','c1','c2','c3'];
+const SEL_COLORS=['sel-0','sel-1','sel-2','sel-3'];
+const BTN_COLORS=['r0','r1','r2'];
 
 function now(){return new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}
 function nowFull(){return new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function fmt(n){if(!n&&n!==0)return'—';if(n>=1000000)return'$'+(n/1000000).toFixed(1)+'M';if(n>=1000)return'$'+(n/1000).toFixed(1)+'K';return'$'+n.toFixed(0)}
 function scroll(){setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),80)}
 function addEl(el){document.getElementById('chat').appendChild(el);scroll();return el}
 
@@ -251,7 +247,7 @@ function startTick(){
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&selToken){
     if(bookTimer)clearInterval(bookTimer);
-    errCount=0; fetchPrices();
+    errCount=0;fetchPrices();
     bookTimer=setInterval(fetchPrices,1000);
     setStatus('reconectando...','amber');
   }
@@ -268,24 +264,18 @@ function hideUrlSheet(e){
 
 function mtype(q){
   q=(q||'').toLowerCase();
-  if(q.includes('o/u')||q.includes('over')||q.includes('under'))return 'Totales';
-  if(q.includes('spread')||/[+-]\d+\.5/.test(q))return 'Spread';
-  if(q.includes('both teams')||q.includes('btts'))return 'BTTS';
-  if(q.includes('exact score'))return 'Exacto';
-  return 'Moneyline';
+  if(q.includes('o/u')||q.includes('over')||q.includes('under'))return'Totales';
+  if(q.includes('spread')||/[+-]\d+\.5/.test(q))return'Spread';
+  if(q.includes('both teams')||q.includes('btts'))return'BTTS';
+  if(q.includes('exact score'))return'Exacto';
+  return'Moneyline';
 }
+function extractSlug(url){const parts=url.trim().replace(/\/$/,'').split('/');return parts[parts.length-1]||''}
 
-function extractSlug(url){
-  const parts=url.trim().replace(/\/$/, '').split('/');
-  return parts[parts.length-1]||'';
-}
-
-// Parse outcomes from market
 function getOutcomes(m){
   let raw=m.outcomes;
   if(typeof raw==='string'){try{raw=JSON.parse(raw)}catch{raw=null}}
   if(Array.isArray(raw)&&raw.length>=2)return raw;
-  // Fallback
   const q=(m.question||'').toLowerCase();
   if(q.includes('o/u')||q.includes('over')||q.includes('under'))return['Over','Under'];
   if(q.includes('both teams'))return['Yes','No'];
@@ -302,8 +292,7 @@ async function loadEvent(){
   document.getElementById('urlinput').value='';
   ['market-card','live-card','bet-card'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove()});
   userMsg(url.length>55?'...'+url.slice(-50):url);
-  showTyping();
-  setStatus('cargando...','amber');
+  showTyping();setStatus('cargando...','amber');
   try{
     const res=await fetch(`${BOT}/event?slug=${encodeURIComponent(slug)}`,{cache:'no-store'});
     const data=await res.json();
@@ -312,9 +301,7 @@ async function loadEvent(){
     allMarkets=data.markets||[];
     renderEventCard(data.event||slug);
     startKeepalive();startTick();setOnline(true);
-  }catch(e){
-    removeTyping();botMsg(`❌ Error de conexión`);setStatus('error','red');
-  }
+  }catch(e){removeTyping();botMsg(`❌ Error de conexión`);setStatus('error','red')}
 }
 
 window.addEventListener('load',()=>{
@@ -359,10 +346,11 @@ function renderMList(){
   if(!container)return;
   const filtered=allMarkets.filter(m=>mtype(m.question)===activeTab);
   container.innerHTML=filtered.map((m,i)=>{
-    const vol=m.volume?`<div class="mitem-vol">Vol $${parseFloat(m.volume).toLocaleString('en',{maximumFractionDigits:0})}</div>`:'';
+    const vol=m.volume?`<span class="mitem-chip vol">Vol ${fmt(parseFloat(m.volume))}</span>`:'';
     const isSel=(m.token_ids||[])[0]===selToken;
     return`<div class="mitem${isSel?' sel':''}" onclick="pickMarket(${i})">
-      <div class="mitem-q">${m.question}</div>${vol}
+      <div class="mitem-q">${m.question}</div>
+      <div class="mitem-meta">${vol}</div>
     </div>`;
   }).join('');
   const byVol=[...filtered].sort((a,b)=>parseFloat(b.volume||0)-parseFloat(a.volume||0));
@@ -374,25 +362,22 @@ function pickMarket(idx){
   const m=filtered[idx];
   if(!m)return;
   document.querySelectorAll('.mitem').forEach((el,i)=>el.classList.toggle('sel',i===idx));
-
   const tokens=m.token_ids||[];
   selToken=tokens[0]||null;
   selToken2=tokens[1]||null;
   selMktQ=m.question;
   selOutcomes=getOutcomes(m);
   selOutcomeIdx=null;
-  prices={};
-  errCount=0;
-
+  prices={};errCount=0;
   ['live-card','bet-card'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove()});
 
-  // Build live price columns dynamically
   const n=selOutcomes.length;
   const gridClass=n>=3?'three':'two';
   const sidesHtml=selOutcomes.map((oc,i)=>`
     <div class="live-side">
       <div class="live-side-label">${oc}</div>
       <div class="live-price ${COLORS[i]}" id="lp-${i}">—</div>
+      <div class="live-usdc" id="lu-${i}">—</div>
     </div>`).join('');
 
   const lc=document.createElement('div');
@@ -405,48 +390,41 @@ function pickMarket(idx){
         <div class="live-ts" id="lts">—</div>
       </div>
     </div>
-    <div class="live-prices ${gridClass}" id="live-prices">${sidesHtml}</div>
+    <div class="live-prices ${gridClass}">${sidesHtml}</div>
     <div class="live-footer">
       <div class="live-stat"><div class="live-stat-val" id="ls-bid">—</div><div class="live-stat-lbl">bid</div></div>
       <div class="live-stat"><div class="live-stat-val" id="ls-ask">—</div><div class="live-stat-lbl">ask</div></div>
       <div class="live-stat"><div class="live-stat-val" id="ls-spread">—</div><div class="live-stat-lbl">spread</div></div>
+      <div class="live-stat"><div class="live-stat-val" id="ls-bdepth">—</div><div class="live-stat-lbl">bid depth</div></div>
+      <div class="live-stat"><div class="live-stat-val" id="ls-adepth">—</div><div class="live-stat-lbl">ask depth</div></div>
     </div>`;
   addEl(lc);
   renderBetCard();
-
   if(bookTimer)clearInterval(bookTimer);
   fetchPrices();
   bookTimer=setInterval(fetchPrices,1000);
 }
 
-// Fetch prices for all tokens in the market
 async function fetchPrices(){
   if(!selToken)return;
   const tokensToFetch=[selToken,selToken2].filter(Boolean);
   let anyOk=false;
-
   for(let i=0;i<tokensToFetch.length;i++){
     const tid=tokensToFetch[i];
     try{
       const res=await fetch(`${BOT}/price?token_id=${tid}`,{cache:'no-store'});
       if(!res.ok)throw new Error(`HTTP ${res.status}`);
       const data=await res.json();
-      prices[tid]={ask:data.best_ask,bid:data.best_bid,spread:data.spread,ts:data.ts};
+      prices[tid]={ask:data.best_ask,bid:data.best_bid,spread:data.spread,bid_depth:data.bid_depth||0,ask_depth:data.ask_depth||0,ts:data.ts};
       anyOk=true;
-    }catch(e){
-      // keep old price
-    }
+    }catch(e){}
   }
-
   if(anyOk){
-    errCount=0;
-    if(!isOnline)setOnline(true);
-    updateLivePrices();
-    updateBetCard();
+    errCount=0;if(!isOnline)setOnline(true);
+    updateLivePrices();updateBetCard();
   }else{
     errCount++;
-    const ldot=document.getElementById('ldot');
-    if(ldot)ldot.className='live-dot off';
+    const ldot=document.getElementById('ldot');if(ldot)ldot.className='live-dot off';
     if(errCount>=4){
       setOnline(false);
       setTimeout(()=>{if(selToken)fetchPrices()},Math.min(errCount*2000,10000));
@@ -456,52 +434,57 @@ async function fetchPrices(){
 
 function getAsk(tokenIdx){
   const tid=tokenIdx===0?selToken:selToken2;
-  if(!tid)return null;
-  // For token2 (NO/Under), price = 1 - ask of token1 if no separate feed
-  const p=prices[tid];
-  if(p&&p.ask)return p.ask;
-  // Fallback: complement of token1
-  if(tokenIdx===1&&selToken&&prices[selToken]&&prices[selToken].ask)
-    return 1-prices[selToken].ask;
+  if(tid&&prices[tid]&&prices[tid].ask)return prices[tid].ask;
+  if(tokenIdx===1&&selToken&&prices[selToken]&&prices[selToken].ask)return 1-prices[selToken].ask;
   return null;
+}
+function getDepth(tokenIdx){
+  const tid=tokenIdx===0?selToken:selToken2;
+  if(tid&&prices[tid])return{bid:prices[tid].bid_depth||0,ask:prices[tid].ask_depth||0};
+  return{bid:0,ask:0};
 }
 
 function updateLivePrices(){
   const ldot=document.getElementById('ldot');
   const lts=document.getElementById('lts');
-  const lsBid=document.getElementById('ls-bid');
-  const lsAsk=document.getElementById('ls-ask');
-  const lsSpread=document.getElementById('ls-spread');
-
   if(ldot)ldot.className='live-dot';
   if(lts)lts.textContent=nowFull();
 
-  // Primary token stats
   const p0=prices[selToken]||{};
-  if(lsBid)lsBid.textContent=p0.bid?(p0.bid*100).toFixed(1)+'¢':'—';
-  if(lsAsk)lsAsk.textContent=p0.ask?(p0.ask*100).toFixed(1)+'¢':'—';
-  if(lsSpread)lsSpread.textContent=p0.spread?(p0.spread*100).toFixed(1)+'¢':'—';
+  const el=s=>document.getElementById(s);
+  if(el('ls-bid'))el('ls-bid').textContent=p0.bid?(p0.bid*100).toFixed(1)+'¢':'—';
+  if(el('ls-ask'))el('ls-ask').textContent=p0.ask?(p0.ask*100).toFixed(1)+'¢':'—';
+  if(el('ls-spread'))el('ls-spread').textContent=p0.spread?(p0.spread*100).toFixed(1)+'¢':'—';
+  if(el('ls-bdepth'))el('ls-bdepth').textContent=fmt(p0.bid_depth||0);
+  if(el('ls-adepth'))el('ls-adepth').textContent=fmt(p0.ask_depth||0);
 
-  // Update each outcome price
   selOutcomes.forEach((oc,i)=>{
-    const el=document.getElementById(`lp-${i}`);
-    if(!el)return;
+    const priceEl=el(`lp-${i}`);
+    const usdcEl=el(`lu-${i}`);
     const ask=getAsk(i);
-    el.textContent=ask?(ask*100).toFixed(1)+'¢':'—';
+    const depth=getDepth(i);
+    if(priceEl)priceEl.textContent=ask?(ask*100).toFixed(1)+'¢':'—';
+    if(usdcEl){
+      // Show available liquidity at this side
+      const liq=i===0?depth.ask:depth.bid;
+      usdcEl.textContent=liq?fmt(liq)+' disp.':'—';
+    }
   });
 }
 
 function updateBetCard(){
   if(selOutcomeIdx===null)return;
-  // Update prices in outcome buttons
   selOutcomes.forEach((oc,i)=>{
     const priceEl=document.querySelector(`#oc-btn-${i} .oc-price`);
-    if(priceEl){
-      const ask=getAsk(i);
-      priceEl.textContent=ask?(ask*100).toFixed(1)+'¢':'—';
+    const depthEl=document.querySelector(`#oc-btn-${i} .oc-depth`);
+    const ask=getAsk(i);
+    const depth=getDepth(i);
+    if(priceEl)priceEl.textContent=ask?(ask*100).toFixed(1)+'¢':'—';
+    if(depthEl){
+      const liq=i===0?depth.ask:depth.bid;
+      depthEl.textContent=liq?fmt(liq)+' disponible':'—';
     }
   });
-  // Update fire button and profit
   const amount=parseFloat(document.getElementById('betamount')?.value||'50')||50;
   const ask=getAsk(selOutcomeIdx);
   if(ask){
@@ -530,15 +513,19 @@ function renderBetCard(){
   const old=document.getElementById('bet-card');if(old)old.remove();
   const amount=parseFloat(document.getElementById('betamount')?.value||'50')||50;
   const n=selOutcomes.length;
-  const gridClass=n>=3?'three':n===1?'two':'two';
+  const gridClass=n>=3?'three':'two';
 
   const btnsHtml=selOutcomes.map((oc,i)=>{
     const ask=getAsk(i);
+    const depth=getDepth(i);
     const priceStr=ask?(ask*100).toFixed(1)+'¢':'—';
+    const liq=i===0?depth.ask:depth.bid;
+    const depthStr=liq?fmt(liq)+' disponible':'—';
     const isSel=selOutcomeIdx===i;
     return`<div class="oc-btn${isSel?' '+SEL_COLORS[i]:''}" id="oc-btn-${i}" onclick="pickOutcome(${i})">
       <div class="oc-label ${COLORS[i]}">${oc}</div>
-      <div class="oc-price ${COLORS[i]}" >${priceStr}</div>
+      <div class="oc-price ${COLORS[i]}">${priceStr}</div>
+      <div class="oc-depth">${depthStr}</div>
     </div>`;
   }).join('');
 
@@ -599,15 +586,12 @@ function onAmt(){
   if(btn)btn.textContent=`⚡ APOSTAR ${selOutcomes[selOutcomeIdx]} · $${amount} → +$${profit}`;
   updateProfit(amount,ask);
 }
-
 function setAmt(v){const f=document.getElementById('betamount');if(f){f.value=v;onAmt()}}
-
 function pickOutcome(idx){selOutcomeIdx=idx;renderBetCard()}
 
 function fireOrder(){
   if(selOutcomeIdx===null)return;
-  const ask=getAsk(selOutcomeIdx);
-  if(!ask)return;
+  const ask=getAsk(selOutcomeIdx);if(!ask)return;
   const amount=parseFloat(document.getElementById('betamount')?.value||'50')||50;
   const shares=(amount/ask).toFixed(2);
   const profit=(amount/ask-amount).toFixed(2);
