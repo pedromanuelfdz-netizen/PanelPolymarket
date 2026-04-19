@@ -632,7 +632,14 @@ async function fireOrder(){
 
     if(data.status==='ok'){
       if(btn){btn.textContent='✓ ORDEN EJECUTADA'}
-      botMsg(`✅ <b>Orden ejecutada en Polymarket</b><br>${col} <b>${label}</b> @ ${(ask*100).toFixed(1)}¢<br>💵 $${amount} → ${shares} shares<br>📈 Ganancia potencial: <b>+$${profit}</b><br><small style="color:var(--text3)">${JSON.stringify(data.result||{}).slice(0,100)}</small>`);
+      const resultStr = JSON.stringify(data.result||{}, null, 2);
+      const orderId = data.result?.orderID || data.result?.order_id || data.result?.id || '';
+      botMsg(`✅ <b>Orden ejecutada en Polymarket</b><br>
+        ${col} <b>${label}</b> @ ${(ask*100).toFixed(1)}¢<br>
+        💵 $${amount} → ${shares} shares<br>
+        📈 Ganancia potencial: <b>+$${profit}</b><br>
+        ${orderId ? `🔑 <code style="font-size:10px;word-break:break-all">${orderId}</code><br>` : ''}
+        <small style="color:var(--text3);font-size:10px;word-break:break-all">${resultStr}</small>`);
     } else if(data.status==='dry_run'){
       if(btn){btn.textContent='🔒 DRY RUN activo'}
       botMsg(`🔒 <b>DRY RUN</b> — orden no ejecutada.<br>Cambia DRY_RUN=False en el bot para operar real.`);
