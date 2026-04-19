@@ -155,6 +155,24 @@
     .ani{animation:in 0.2s ease forwards}
     ::-webkit-scrollbar{width:3px}
     ::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+    /* Positions */
+    .pos-card{background:var(--surface);border-radius:16px;border-bottom-left-radius:4px;overflow:hidden;align-self:flex-start;width:100%;border:1px solid var(--border)}
+    .pos-head{background:linear-gradient(135deg,#1a2d1a,#0a1f0a);padding:10px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .pos-title{font-size:12px;font-weight:600;color:var(--green)}
+    .pos-refresh{font-size:11px;color:var(--text3);cursor:pointer;padding:4px 8px;background:var(--input);border-radius:6px;border:none;font-family:var(--sans);color:var(--text3)}
+    .pos-item{padding:12px 13px;border-bottom:1px solid var(--border)}
+    .pos-item:last-child{border-bottom:none}
+    .pos-q{font-size:12px;color:var(--text2);margin-bottom:6px;line-height:1.4}
+    .pos-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+    .pos-label{font-size:11px;color:var(--text3)}
+    .pos-val{font-size:12px;font-weight:600;font-family:var(--mono)}
+    .pos-val.g{color:var(--green)}.pos-val.r{color:var(--red)}.pos-val.w{color:var(--text)}
+    .sell-btn{width:100%;margin-top:8px;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--sans);background:var(--red);color:white;transition:opacity 0.15s}
+    .sell-btn:active{opacity:0.8}
+    .sell-btn.selling{background:var(--orange);color:#1a1000}
+    .sell-btn.sold{background:var(--blue);color:white}
+    .pos-empty{padding:16px 13px;text-align:center;font-size:13px;color:var(--text3)}
   </style>
 </head>
 <body>
@@ -169,6 +187,7 @@
     </div>
   </div>
   <div class="htick" id="htick"></div>
+  <button class="change-btn" onclick="loadPositions()">📊 Pos</button>
   <button class="change-btn" onclick="showUrlSheet()">🔄 Cambiar</button>
 </div>
 
@@ -655,6 +674,81 @@ async function fireOrder(){
   }
 
   setTimeout(()=>{selOutcomeIdx=null;renderBetCard()},6000);
+}
+
+// ── Positions ─────────────────────────────────────────────────────────────
+async function loadPositions(){
+  const old=document.getElementById('pos-card');if(old)old.remove();
+
+  const pc=document.createElement('div');
+  pc.className='pos-card ani';pc.id='pos-card';
+  pc.innerHTML=`
+    <div class="pos-head">
+      <div class="pos-title">📊 MIS POSICIONES</div>
+      <button class="pos-refresh" onclick="loadPositions()">↻ Actualizar</button>
+    </div>
+    <div id="pos-body"><div class="pos-empty">Cargando...</div></div>`;
+  addEl(pc);
+
+  try{
+    const res=await fetch(`${BOT}/positions`,{cache:'no-store'});
+    const data=await res.json();
+    const body=document.getElementById('pos-body');
+    if(!body)return;
+
+    if(data.error){body.innerHTML=`<div class="pos-empty">❌ ${data.error}</div>`;return}
+
+    const positions=data.positions||[];
+    if(!positions.length){body.innerHTML=`<div class="pos-empty">No hay posiciones abiertas</div>`;return}
+
+    body.innerHTML=positions.map((p,i)=>{
+      const bid=p.best_bid?(p.best_bid*100).toFixed(1)+'¢':'—';
+      const val=p.current_value?`$${p.current_value.toFixed(2)}`:'—';
+      const pnl=p.pnl!=null?(p.pnl>=0?`<span class="pos-val g">+$${p.pnl.toFixed(2)}</span>`:`<span class="pos-val r">-$${Math.abs(p.pnl).toFixed(2)}</span>`):'—';
+      const avg=p.avg_price?(p.avg_price*100).toFixed(1)+'¢':'—';
+      return`<div class="pos-item">
+        <div class="pos-q">${p.outcome||p.market||p.token_id.slice(0,20)+'...'}</div>
+        <div class="pos-row"><span class="pos-label">Shares</span><span class="pos-val w">${parseFloat(p.size).toFixed(2)}</span></div>
+        <div class="pos-row"><span class="pos-label">Precio entrada</span><span class="pos-val w">${avg}</span></div>
+        <div class="pos-row"><span class="pos-label">Precio actual (bid)</span><span class="pos-val w">${bid}</span></div>
+        <div class="pos-row"><span class="pos-label">Valor si vendes ahora</span><span class="pos-val g">${val}</span></div>
+        <div class="pos-row"><span class="pos-label">P&L</span>${pnl}</div>
+        <button class="sell-btn" id="sell-btn-${i}" onclick="sellPosition('${p.token_id}',${p.size},${i})">
+          💸 VENDER ${parseFloat(p.size).toFixed(2)} shares → ${val}
+        </button>
+      </div>`;
+    }).join('');
+
+  }catch(e){
+    const body=document.getElementById('pos-body');
+    if(body)body.innerHTML=`<div class="pos-empty">❌ Error: ${e.message}</div>`;
+  }
+}
+
+async function sellPosition(tokenId, size, idx){
+  const btn=document.getElementById(`sell-btn-${idx}`);
+  if(btn){btn.className='sell-btn selling';btn.textContent='⏳ Vendiendo...';btn.disabled=true;}
+
+  try{
+    const res=await fetch(`${BOT}/sell`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token_id:tokenId, size:size})
+    });
+    const data=await res.json();
+
+    if(data.status==='ok'){
+      if(btn){btn.className='sell-btn sold';btn.textContent='✓ VENDIDO'}
+      botMsg(`✅ <b>Posición cerrada</b><br>💰 ${parseFloat(size).toFixed(2)} shares vendidas<br><small style="color:var(--text3)">${JSON.stringify(data.result||{}).slice(0,200)}</small>`);
+      setTimeout(()=>loadPositions(), 3000);
+    }else{
+      if(btn){btn.className='sell-btn';btn.textContent='❌ Error — reintentar';btn.disabled=false;}
+      botMsg(`❌ <b>Error vendiendo</b><br><small style="color:var(--text3)">${data.error||JSON.stringify(data)}</small>`);
+    }
+  }catch(e){
+    if(btn){btn.className='sell-btn';btn.textContent='❌ Sin conexión';btn.disabled=false;}
+    botMsg(`❌ Error de conexión: ${e.message}`);
+  }
 }
 
 document.getElementById('urlinput').addEventListener('keydown',e=>{if(e.key==='Enter')loadEvent()});
