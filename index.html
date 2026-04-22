@@ -156,7 +156,7 @@
   <div class="htick" id="htick"></div>
   <button class="hbtn active-tab" id="tab-dash"   onclick="showTab('dash')">📊</button>
   <button class="hbtn"            id="tab-pnl"    onclick="showTab('pnl')">💹 PnL</button>
-  <button class="hbtn"            id="tab-trades" onclick="showTab('trades')">📋</button>
+  <button class="hbtn"            id="tab-trades" onclick="showTab('trades')">✅ Cerradas</button>
   <button class="hbtn"            id="tab-pos"    onclick="showTab('pos')">💼</button>
 </div>
 
@@ -276,15 +276,63 @@
 
 </div>
 
-<!-- ══ TRADES TAB ═════════════════════════════════════════════════════════ -->
+<!-- ══ TRADES TAB — OPERACIONES CERRADAS ══════════════════════════════════ -->
 <div class="page" id="page-trades">
+
+  <!-- Resumen del día -->
   <div class="card ani">
     <div class="card-head">
-      <span class="card-title">📋 Historial</span>
-      <span class="card-badge" id="trade-count">—</span>
+      <span class="card-title">📊 Resumen del día</span>
+      <span class="card-badge" id="closed-count">—</span>
+    </div>
+    <div class="grid3" style="border-bottom:1px solid var(--border)">
+      <div class="gcell">
+        <div class="gcell-val w" id="closed-pnl">—</div>
+        <div class="gcell-lbl">PnL CERRADO</div>
+      </div>
+      <div class="gcell">
+        <div class="gcell-val g" id="closed-wins">—</div>
+        <div class="gcell-lbl">GANADORAS</div>
+      </div>
+      <div class="gcell">
+        <div class="gcell-val r" id="closed-losses">—</div>
+        <div class="gcell-lbl">PERDEDORAS</div>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="gcell">
+        <div class="gcell-val o" id="closed-pending">—</div>
+        <div class="gcell-lbl">PENDIENTES</div>
+      </div>
+      <div class="gcell">
+        <div class="gcell-val w" id="closed-winrate">—</div>
+        <div class="gcell-lbl">WIN RATE</div>
+      </div>
+      <div class="gcell">
+        <div class="gcell-val w" id="closed-avgpnl">—</div>
+        <div class="gcell-lbl">PnL MEDIO</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de operaciones cerradas -->
+  <div class="card ani">
+    <div class="card-head">
+      <span class="card-title">✅ Operaciones cerradas</span>
+      <button class="hbtn" style="font-size:10px" onclick="refreshTrades()">↻</button>
     </div>
     <div id="trades-body"><div class="empty">Cargando...</div></div>
   </div>
+
+  <!-- Operaciones abiertas sin cerrar aún -->
+  <div class="card ani">
+    <div class="card-head">
+      <span class="card-title">⏳ Entradas sin salida registrada</span>
+      <span class="card-badge o" id="open-ops-count">—</span>
+    </div>
+    <div id="open-ops-body"><div class="empty">—</div></div>
+  </div>
+
 </div>
 
 <!-- ══ POSITIONS TAB ══════════════════════════════════════════════════════ -->
@@ -523,37 +571,155 @@ async function refreshPnl() {
   } catch(e) { console.error('PnL refresh error:', e); }
 }
 
-// ══ TRADES TAB ════════════════════════════════════════════════════════════
+// ══ TRADES TAB — OPERACIONES CERRADAS ════════════════════════════════════
 async function refreshTrades() {
   try {
-    const [log, dash] = await Promise.all([
-      fetch(`${BOT}/arb-log`,  {cache:'no-store'}).then(r=>r.json()),
-      fetch(`${BOT}/dashboard`,{cache:'no-store'}).then(r=>r.json()),
-    ]);
-    const trades = log.log||[], dryRun = dash.dry_run;
-    $('trade-count').textContent = trades.length+' ops.';
-    $('trades-body').innerHTML = trades.length===0
-      ? '<div class="empty">Sin operaciones</div>'
-      : trades.map(t=>{
-          const lc = ['l1','l2','l3'][(t.layer||1)-1]||'l1';
-          const ll = ['L1','L2','L3'][(t.layer||1)-1]||'L?';
-          const est  = ((t.edge_pct||0)*(t.amount||0)/100);
-          const pstr = t.status==='dry_run'?`~$${est.toFixed(3)}`:t.status==='executed'?pfmt(est):t.status;
-          const pcls = t.status==='dry_run'?'n':t.edge_pct>0?'g':'r';
-          const side = t.side==='buy'||t.side==='buy_limit'?'▲':'▼';
-          const ts   = (t.ts||'').substring(11,16);
-          return `<div class="trade-row">
-            <div class="tl ${lc}">${ll}</div>
+    const res  = await fetch(`${BOT}/arb-log`, {cache:'no-store'}).then(r=>r.json());
+    const all  = (res.log||[]).slice().reverse();   // oldest first for pairing
+
+    // ── Pair buy→sell per market ──────────────────────────────────────────
+    // Strategy: for each market_id, match the earliest unmatched buy with
+    // the earliest unmatched sell that came after it.
+    // L2 pairs:  buy_limit → sell / sell_limit (flip_filled, flip_ttl_exit)
+    // L3 pairs:  buy → sell (take_profit, stop_loss, time_exit)
+    // Errors and pending orders are shown separately.
+
+    const closed  = [];   // paired round-trips
+    const pending = [];   // buys with no matching sell yet
+    const byMarket = {};  // market_id → {buys:[], sells:[]}
+
+    for (const t of all) {
+      if (t.status === 'error') continue;
+      const key = `${t.layer}_${t.market_id}`;
+      if (!byMarket[key]) byMarket[key] = {buys:[], sells:[], question: t.question, layer: t.layer};
+      const isBuy  = t.side === 'buy' || t.side === 'buy_limit';
+      const isSell = t.side === 'sell' || t.side === 'sell_limit';
+      if (isBuy)  byMarket[key].buys.push(t);
+      if (isSell) byMarket[key].sells.push(t);
+    }
+
+    for (const [key, {buys, sells, question, layer}] of Object.entries(byMarket)) {
+      const usedSells = new Set();
+      for (const buy of buys) {
+        // Find earliest sell after this buy
+        const matchIdx = sells.findIndex((s, i) =>
+          !usedSells.has(i) && s.ts >= buy.ts
+        );
+        if (matchIdx === -1) {
+          pending.push({...buy, question, layer});
+          continue;
+        }
+        usedSells.add(matchIdx);
+        const sell = sells[matchIdx];
+        const buyPrice  = buy.price  || 0;
+        const sellPrice = sell.price || 0;
+        const size      = Math.min(buy.amount||0, sell.amount||0);
+        const pnl       = (sellPrice - buyPrice) * size;
+        const pct       = buyPrice > 0 ? ((sellPrice - buyPrice) / buyPrice * 100) : 0;
+        closed.push({
+          question, layer,
+          buy_ts:    buy.ts,
+          sell_ts:   sell.ts,
+          buy_price: buyPrice,
+          sell_price: sellPrice,
+          size,
+          pnl:       Math.round(pnl * 10000) / 10000,
+          pct:       Math.round(pct * 100) / 100,
+          exit_reason: sell.reason || sell.side,
+          buy_status:  buy.status,
+          sell_status: sell.status,
+        });
+      }
+    }
+
+    // Sort closed: most recent first
+    closed.sort((a,b) => b.sell_ts.localeCompare(a.sell_ts));
+
+    // ── Summary stats ─────────────────────────────────────────────────────
+    const wins      = closed.filter(c => c.pnl > 0);
+    const losses    = closed.filter(c => c.pnl < 0);
+    const totalPnl  = closed.reduce((s,c) => s + c.pnl, 0);
+    const winRate   = closed.length > 0 ? Math.round(wins.length / closed.length * 100) : 0;
+    const avgPnl    = closed.length > 0 ? totalPnl / closed.length : 0;
+
+    $('closed-count').textContent  = closed.length + ' ops.';
+    $('closed-count').className    = 'card-badge ' + (totalPnl > 0 ? 'g' : totalPnl < 0 ? 'r' : '');
+    setVal('closed-pnl',     pfmt(totalPnl), pclass(totalPnl));
+    setVal('closed-wins',    wins.length,    'g');
+    setVal('closed-losses',  losses.length,  losses.length > 0 ? 'r' : 'w');
+    setVal('closed-pending', pending.length, pending.length > 0 ? 'o' : 'w');
+    $('closed-winrate').textContent = closed.length > 0 ? winRate + '%' : '—';
+    $('closed-winrate').className   = 'gcell-val ' + (winRate >= 50 ? 'g' : winRate > 0 ? 'o' : 'w');
+    setVal('closed-avgpnl',  avgPnl !== 0 ? pfmt(avgPnl) : '—', pclass(avgPnl));
+
+    // ── Closed operations list ────────────────────────────────────────────
+    const lc = l => ['l1','l2','l3'][(l||1)-1]||'l1';
+    const ll = l => ['L1','L2','L3'][(l||1)-1]||'L?';
+
+    const exitIcon = r => {
+      if (r === 'take_profit')    return '✅';
+      if (r === 'stop_loss')      return '🛑';
+      if (r === 'flip_filled')    return '✅';
+      if (r === 'flip_ttl_exit')  return '⏱️';
+      if (r === 'time_exit')      return '⏱️';
+      return '📤';
+    };
+    const exitLabel = r => {
+      if (r === 'take_profit')    return 'TP';
+      if (r === 'stop_loss')      return 'SL';
+      if (r === 'flip_filled')    return 'Flip';
+      if (r === 'flip_ttl_exit')  return 'TTL';
+      if (r === 'time_exit')      return 'Time';
+      return r || '—';
+    };
+
+    $('trades-body').innerHTML = closed.length === 0
+      ? '<div class="empty">Sin operaciones cerradas hoy</div>'
+      : closed.map(c => {
+          const pnlCls  = c.pnl > 0 ? 'g' : c.pnl < 0 ? 'r' : 'w';
+          const pctStr  = (c.pct >= 0 ? '+' : '') + c.pct.toFixed(1) + '%';
+          const buyTs   = (c.buy_ts||'').substring(11,16);
+          const sellTs  = (c.sell_ts||'').substring(11,16);
+          return `<div class="trade-row" style="grid-template-columns:20px 1fr auto auto;padding:10px 12px">
+            <div class="tl ${lc(c.layer)}">${ll(c.layer)}</div>
             <div>
-              <div style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${side} ${t.question||'—'}</div>
-              <div style="font-size:9px;color:var(--text3);margin-top:1px">${ts} · $${(t.price||0).toFixed(3)} · score ${t.score||0}</div>
+              <div style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${c.question||'—'}</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:2px;display:flex;gap:6px;align-items:center">
+                <span>${buyTs}→${sellTs}</span>
+                <span style="font-family:var(--mono)">$${c.buy_price.toFixed(3)}→$${c.sell_price.toFixed(3)}</span>
+                <span style="background:var(--input);padding:1px 4px;border-radius:3px">${exitIcon(c.exit_reason)} ${exitLabel(c.exit_reason)}</span>
+              </div>
             </div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:right">$${(t.amount||0).toFixed(2)}</div>
-            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:${pcolor(t.edge_pct)};text-align:right">${pstr}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:right">
+              $${c.size.toFixed(2)}<br><span style="font-size:9px">${pctStr}</span>
+            </div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--${pnlCls==='g'?'green':pnlCls==='r'?'red':'text3'});text-align:right;min-width:56px">
+              ${pfmt(c.pnl)}
+            </div>
           </div>`;
-        }).join('')
-      + `<div class="refresh-ts">actualizado ${now()}</div>`;
-  } catch(e) {}
+        }).join('') + `<div class="refresh-ts">actualizado ${now()}</div>`;
+
+    // ── Pending (open entries without exit) ───────────────────────────────
+    $('open-ops-count').textContent = pending.length || '0';
+    $('open-ops-body').innerHTML = pending.length === 0
+      ? '<div class="empty">Todas las entradas tienen salida registrada</div>'
+      : pending.map(p => {
+          const ts = (p.ts||'').substring(11,16);
+          return `<div class="trade-row" style="grid-template-columns:20px 1fr auto auto;padding:8px 12px;opacity:0.7">
+            <div class="tl ${lc(p.layer)}">${ll(p.layer)}</div>
+            <div>
+              <div style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${p.question||'—'}</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:1px">${ts} · $${(p.price||0).toFixed(3)} · ${p.side}</div>
+            </div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:right">$${(p.amount||0).toFixed(2)}</div>
+            <div style="font-size:10px;color:var(--orange);text-align:right">⏳</div>
+          </div>`;
+        }).join('');
+
+  } catch(e) {
+    $('trades-body').innerHTML = `<div class="empty">❌ ${e.message}</div>`;
+    console.error('refreshTrades:', e);
+  }
 }
 
 // ══ POSITIONS TAB ═════════════════════════════════════════════════════════
