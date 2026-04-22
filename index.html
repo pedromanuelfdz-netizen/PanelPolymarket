@@ -213,7 +213,7 @@
       <div class="gcell"><div class="gcell-val w" id="pnl-total">—</div><div class="gcell-lbl">TOTAL</div></div>
       <div class="gcell"><div class="gcell-val w" id="pnl-realized">—</div><div class="gcell-lbl">REALIZADO</div></div>
       <div class="gcell"><div class="gcell-val w" id="pnl-unreal">—</div><div class="gcell-lbl">NO REALIZ.</div></div>
-      <div class="gcell"><div class="gcell-val o" id="pnl-sim">—</div><div class="gcell-lbl">SIMULADO</div></div>
+      <div class="gcell"><div class="gcell-val o" id="pnl-sim">—</div><div class="gcell-lbl" id="pnl-sim-lbl">SIMULADO</div></div>
     </div>
 
     <!-- PnL por capa -->
@@ -346,9 +346,10 @@ function startDashRefresh() {
 
 async function refreshDashboard() {
   try {
-    const [dash, health] = await Promise.all([
+    const [dash, health, pnlSnap] = await Promise.all([
       fetch(`${BOT}/dashboard`,{cache:'no-store'}).then(r=>r.json()),
       fetch(`${BOT}/health`,   {cache:'no-store'}).then(r=>r.json()),
+      fetch(`${BOT}/pnl`,      {cache:'no-store'}).then(r=>r.json()),
     ]);
     setStatus('conectado','green');
     $('dash-ts').textContent = now();
@@ -370,8 +371,10 @@ async function refreshDashboard() {
     $('st-pos').textContent    = (cap.open_positions||0)+'/'+(cap.max_positions||5);
     $('st-trades').textContent = (dash.filters||{}).hourly_trades||'0/10';
 
-    // Capital
-    const pv = dryRun ? (pnl.simulated_total||0) : (cap.realized_pnl||0);
+    // Capital — Bug 1 fix: in LIVE use realized+unrealized from /pnl, not cap.realized_pnl
+    // cap.realized_pnl only reflects daily_stats which never gets updated for open positions.
+    // pnlSnap.realized + pnlSnap.unrealized is the true current PnL from the engine.
+    const pv = dryRun ? (pnlSnap.simulated_total||0) : ((pnlSnap.realized||0) + (pnlSnap.unrealized||0));
     setVal('cap-dep', '$'+(cap.deployed_today||0).toFixed(2), 'w');
     setVal('cap-pnl', pfmt(pv), pclass(pv));
     setVal('cap-lim', '$'+(cap.daily_limit||0), 'w');
@@ -436,16 +439,38 @@ async function refreshPnl() {
     $('pnl-mode-badge').textContent = dryRun ? '🧪 TEST MODE' : '🔴 LIVE';
     $('pnl-mode-badge').className   = 'card-badge ' + (dryRun?'o':'g');
 
-    // Main totals
-    const total = dryRun ? (d.simulated_total||0) : (d.total||0);
-    setVal('pnl-total',    pfmt(total),            pclass(total));
-    setVal('pnl-realized', pfmt(d.realized||0),    pclass(d.realized));
-    setVal('pnl-unreal',   pfmt(d.unrealized||0),  pclass(d.unrealized));
-    setVal('pnl-sim',      pfmt(d.simulated_total||0), pclass(d.simulated_total));
+    // Update 4th column label based on mode
+    const simLbl = $('pnl-sim-lbl');
+    if (simLbl) simLbl.textContent = dryRun ? 'SIMULADO' : 'REALIZ. HOY';
 
-    // Per-layer PnL
-    const layers = [[d.sim_l1,'pnl-l1'],[d.sim_l2,'pnl-l2'],[d.sim_l3,'pnl-l3']];
-    layers.forEach(([v,id])=>{ setVal(id, pfmt(v||0), pclass(v||0)); });
+    // Bug 2 fix: in LIVE mode show realized+unrealized (real engine values).
+    // d.total = realized + unrealized, which is correct for LIVE.
+    // In DRY RUN show simulated_total as before.
+    // Also show realized and unrealized separately so user can tell what's what.
+    const total    = dryRun ? (d.simulated_total||0) : (d.total||0);
+    const realized = dryRun ? 0                       : (d.realized||0);
+    const unreal   = dryRun ? 0                       : (d.unrealized||0);
+    const sim      = dryRun ? (d.simulated_total||0)  : (d.realized||0);  // 4th col: sim in test, realized in live
+    setVal('pnl-total',    pfmt(total),    pclass(total));
+    setVal('pnl-realized', pfmt(realized), pclass(realized));
+    setVal('pnl-unreal',   pfmt(unreal),   pclass(unreal));
+    setVal('pnl-sim',      pfmt(sim),      pclass(sim));
+
+    // Bug 3 fix: per-layer PnL — in LIVE there are no sim_lX values (always 0).
+    // For LIVE we don't have per-layer breakdown yet from the engine,
+    // so show '—' instead of misleading $0.0000.
+    if (dryRun) {
+      const layers = [[d.sim_l1,'pnl-l1'],[d.sim_l2,'pnl-l2'],[d.sim_l3,'pnl-l3']];
+      layers.forEach(([v,id])=>{ setVal(id, pfmt(v||0), pclass(v||0)); });
+    } else {
+      // In LIVE: show realized PnL total under L2 (the only active layer right now)
+      // and '—' for layers with no closed trades yet.
+      ['pnl-l1','pnl-l2','pnl-l3'].forEach(id => { setVal(id, realized!==0 ? '–' : '–', 'w'); });
+      // If we have positions in the engine, distribute unrealized under their layer
+      if (d.open_positions > 0) {
+        setVal('pnl-l2', pfmt(unreal), pclass(unreal));
+      }
+    }
 
     // Fill rates
     $('fr-l1').textContent = (d.fill_rate_l1||0)+'%';
