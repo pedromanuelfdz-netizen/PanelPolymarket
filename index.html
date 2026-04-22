@@ -578,36 +578,53 @@ async function refreshTrades() {
     const all  = (res.log||[]).slice().reverse();   // oldest first for pairing
 
     // ── Pair buy→sell per market ──────────────────────────────────────────
-    // Strategy: for each market_id, match the earliest unmatched buy with
-    // the earliest unmatched sell that came after it.
-    // L2 pairs:  buy_limit → sell / sell_limit (flip_filled, flip_ttl_exit)
-    // L3 pairs:  buy → sell (take_profit, stop_loss, time_exit)
-    // Errors and pending orders are shown separately.
+    // Rules for what counts as a real exit (sell):
+    //   L2: 'sell' with reason flip_filled or flip_ttl_exit
+    //       NOT 'sell_limit' with reason flip_exit_placed — that's just placing
+    //       the order, not the actual fill. Including it would double-count.
+    //   L3: 'sell' with any reason (take_profit, stop_loss, time_exit)
+    //   L1: 'sell' (market order autocorrect or exit)
+    // Tie-breaker: when two buys have the same timestamp, use array index
+    // so the first buy in the log always gets the first available sell.
 
-    const closed  = [];   // paired round-trips
-    const pending = [];   // buys with no matching sell yet
-    const byMarket = {};  // market_id → {buys:[], sells:[]}
+    const isRealExit = t => {
+      if (t.side === 'sell_limit') {
+        // sell_limit is only a real exit if it has an actual fill reason
+        // flip_exit_placed means the order was just submitted, not filled
+        return t.reason !== 'flip_exit_placed';
+      }
+      return t.side === 'sell';
+    };
+
+    const isEntry = t => t.side === 'buy' || t.side === 'buy_limit';
+
+    const closed  = [];
+    const pending = [];
+    const byMarket = {};
 
     for (const t of all) {
       if (t.status === 'error') continue;
       const key = `${t.layer}_${t.market_id}`;
       if (!byMarket[key]) byMarket[key] = {buys:[], sells:[], question: t.question, layer: t.layer};
-      const isBuy  = t.side === 'buy' || t.side === 'buy_limit';
-      const isSell = t.side === 'sell' || t.side === 'sell_limit';
-      if (isBuy)  byMarket[key].buys.push(t);
-      if (isSell) byMarket[key].sells.push(t);
+      if (isEntry(t))    byMarket[key].buys.push(t);
+      if (isRealExit(t)) byMarket[key].sells.push(t);
     }
 
     for (const [key, {buys, sells, question, layer}] of Object.entries(byMarket)) {
       const usedSells = new Set();
-      for (const buy of buys) {
-        // Find earliest sell after this buy
-        const matchIdx = sells.findIndex((s, i) =>
-          !usedSells.has(i) && s.ts >= buy.ts
-        );
+      buys.forEach((buy, buyIdx) => {
+        // Find earliest sell after this buy — using index as tie-breaker
+        // so buy[0] gets sell[0], buy[1] gets sell[1], etc. when timestamps match
+        let matchIdx = -1;
+        for (let i = 0; i < sells.length; i++) {
+          if (usedSells.has(i)) continue;
+          const sellAfter = sells[i].ts > buy.ts ||
+            (sells[i].ts === buy.ts && i >= buyIdx);
+          if (sellAfter) { matchIdx = i; break; }
+        }
         if (matchIdx === -1) {
           pending.push({...buy, question, layer});
-          continue;
+          return;
         }
         usedSells.add(matchIdx);
         const sell = sells[matchIdx];
@@ -618,18 +635,16 @@ async function refreshTrades() {
         const pct       = buyPrice > 0 ? ((sellPrice - buyPrice) / buyPrice * 100) : 0;
         closed.push({
           question, layer,
-          buy_ts:    buy.ts,
-          sell_ts:   sell.ts,
-          buy_price: buyPrice,
-          sell_price: sellPrice,
+          buy_ts:      buy.ts,
+          sell_ts:     sell.ts,
+          buy_price:   buyPrice,
+          sell_price:  sellPrice,
           size,
-          pnl:       Math.round(pnl * 10000) / 10000,
-          pct:       Math.round(pct * 100) / 100,
+          pnl:         Math.round(pnl * 10000) / 10000,
+          pct:         Math.round(pct * 100) / 100,
           exit_reason: sell.reason || sell.side,
-          buy_status:  buy.status,
-          sell_status: sell.status,
         });
-      }
+      });
     }
 
     // Sort closed: most recent first
