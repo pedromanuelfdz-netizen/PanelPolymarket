@@ -184,7 +184,7 @@ body {
 /* ── Badges ── */
 .kb { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
 .kb-max { background: #FEF3E2; color: #D97706; border: 1px solid #FCD34D; }
-.kb-min { background: rgba(42,171,238,0.1); color: var(--tg-dark); border: 1px solid rgba(42,171,238,0.3); }
+.kb-min { background: #DCEEFB; color: #0C5A8E; border: 1px solid #7DBCEC; }
 .kb-premium { background: #F3F0FF; color: #7C3AED; border: 1px solid #C4B5FD; }
 .kb-alta { background: rgba(42,171,238,0.1); color: var(--tg-dark); border: 1px solid rgba(42,171,238,0.3); }
 .kb-especulativa { background: var(--gold-bg); color: #92400E; border: 1px solid #FCD34D; }
@@ -347,7 +347,7 @@ const REPO_RAW    = "https://raw.githubusercontent.com/pedromanuelfdz-netizen/Po
 const HISTORY_URL = `${REPO_RAW}/trades_history.json`;
 const STATE_URL   = `${REPO_RAW}/state.json`;
 
-let allHistory = [], openPositions = {}, currentFilter = 'all';
+let allHistory = [], openPositions = {}, stateData = null, currentFilter = 'all';
 const $ = id => document.getElementById(id);
 
 function fmt(v, plus=false) {
@@ -361,9 +361,17 @@ function parseDate(s) {
   const d = new Date(s.replace(' UTC','Z').replace(' ','T'));
   return isNaN(d)?null:d;
 }
-function startOfDay()   { const d=new Date(); d.setUTCHours(0,0,0,0); return d; }
-function startOfWeek()  { const d=startOfDay(); d.setUTCDate(d.getUTCDate()-d.getUTCDay()); return d; }
-function startOfMonth() { const d=new Date(); d.setUTCDate(1); d.setUTCHours(0,0,0,0); return d; }
+// Períodos en hora LOCAL del navegador (no UTC) — así "hoy" significa "hoy
+// para el usuario que mira el panel". La semana empieza en LUNES (estándar EU).
+function startOfDay()   { const d=new Date(); d.setHours(0,0,0,0); return d; }
+function startOfWeek()  {
+  const d=startOfDay();
+  const dow=d.getDay();           // 0=domingo, 1=lunes, ..., 6=sábado
+  const offset = dow===0 ? 6 : dow-1;   // retroceder hasta el lunes
+  d.setDate(d.getDate()-offset);
+  return d;
+}
+function startOfMonth() { const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; }
 
 function stats(trades, from) {
   const f = from ? trades.filter(t=>{ const d=parseDate(t.resolved_at); return d&&d>=from; }) : trades;
@@ -489,7 +497,7 @@ function filterTrades(filter, btn) {
 async function loadData() {
   let histOk=false, stateOk=false;
   try { const r=await fetch(HISTORY_URL+'?t='+Date.now()); if(!r.ok)throw 0; allHistory=await r.json(); histOk=true; } catch(e){}
-  try { const r=await fetch(STATE_URL+'?t='+Date.now()); if(!r.ok)throw 0; const s=await r.json(); openPositions=s.positions||{}; stateOk=true; } catch(e){}
+  try { const r=await fetch(STATE_URL+'?t='+Date.now()); if(!r.ok)throw 0; stateData=await r.json(); openPositions=stateData.positions||{}; stateOk=true; } catch(e){}
 
   const dot=$('dot'), st=$('status-txt');
   if (!histOk&&!stateOk) {
@@ -502,8 +510,11 @@ async function loadData() {
   $('load-error').style.display='none';
   $('last-upd').textContent=new Date().toUTCString().slice(0,22)+' UTC';
 
-  const bal=openPositions._balance;
-  $('balance').textContent=bal!==undefined?`$${parseFloat(bal).toFixed(2)}`:'$—';
+  // Balance: el bot lo escribe en state._balance (campo raíz, no dentro de positions).
+  // Compatibilidad hacia atrás: si solo está en positions._balance, también lo lee.
+  let bal = stateData?._balance;
+  if (bal === undefined) bal = openPositions._balance;
+  $('balance').textContent = bal !== undefined ? `$${parseFloat(bal).toFixed(2)}` : '$—';
 
   renderPnl(allHistory);
   renderCity(allHistory,'max','tbody-max','badge-max');
